@@ -19,7 +19,7 @@ A beautiful Windows desktop application to track your screen time and applicatio
 
 ## Screenshots
 
-Coming soon...
+![Dashboard Screenshot](assets/screenshot.png)
 
 ## Installation
 
