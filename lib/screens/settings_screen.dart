@@ -288,6 +288,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onPressed: () => _showIgnoredAppsDialog(context, settings),
                           ),
                         ),
+                        _Divider(isLight: isLight),
+                        _SettingsRow(
+                          icon: FluentIcons.favorite_star,
+                          title: 'Productive applications',
+                          subtitle: '${settings.productiveApps.length} apps counted towards focus score',
+                          isLight: isLight,
+                          child: Button(
+                            child: const Text('Manage'),
+                            onPressed: () => _showProductiveAppsDialog(context, settings),
+                          ),
+                        ),
                       ],
                     );
                   },
@@ -505,6 +516,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             icon: const Icon(FluentIcons.delete),
                             onPressed: () async {
                               await settings.removeIgnoredApp(app);
+                              setDialogState(() {});
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              child: const Text('Done'),
+              onPressed: () => Navigator.pop(dialogContext),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showProductiveAppsDialog(BuildContext context, SettingsProvider settings) async {
+    final controller = TextEditingController();
+    
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => ContentDialog(
+          title: const Text('Productive Applications'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Apps in this list will contribute to your Focus Score.'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextBox(
+                        controller: controller,
+                        placeholder: 'Enter app name (e.g., Code.exe)',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      child: const Text('Add'),
+                      onPressed: () async {
+                        if (controller.text.isNotEmpty) {
+                          await settings.addProductiveApp(controller.text);
+                          controller.clear();
+                          setDialogState(() {});
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (settings.productiveApps.isEmpty)
+                  const Text('No productive apps added yet.')
+                else
+                  SizedBox(
+                    height: 150,
+                    child: ListView.builder(
+                      itemCount: settings.productiveApps.length,
+                      itemBuilder: (context, index) {
+                        final app = settings.productiveApps[index];
+                        return ListTile(
+                          title: Text(app),
+                          trailing: IconButton(
+                            icon: const Icon(FluentIcons.delete),
+                            onPressed: () async {
+                              await settings.removeProductiveApp(app);
                               setDialogState(() {});
                             },
                           ),

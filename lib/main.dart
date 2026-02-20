@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart' as acrylic;
 import 'package:system_theme/system_theme.dart';
+import 'package:system_tray/system_tray.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/screen_time_provider.dart';
 import 'providers/theme_provider.dart';
@@ -61,6 +62,7 @@ void main() async {
   
   // Initialize window manager
   await windowManager.ensureInitialized();
+  await windowManager.setPreventClose(true);
   
   // Initialize system theme for accent color
   await SystemTheme.accentColor.load();
@@ -164,11 +166,46 @@ class MainWindow extends StatefulWidget {
 
 class _MainWindowState extends State<MainWindow> with WindowListener {
   int _currentIndex = 0;
+  final SystemTray _systemTray = SystemTray();
+  final Menu _menu = Menu();
 
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
+    _initSystemTray();
+  }
+
+  Future<void> _initSystemTray() async {
+    String path = Platform.isWindows ? 'windows/runner/resources/app_icon.ico' : 'AppIcon';
+
+    // We first init the systray menu
+    await _systemTray.initSystemTray(
+      title: "Screen Time",
+      iconPath: path,
+    );
+
+    // create context menu
+    await _menu.buildFrom([
+      MenuItemLabel(label: 'Show', onClicked: (menuItem) => windowManager.show()),
+      MenuItemLabel(label: 'Hide', onClicked: (menuItem) => windowManager.hide()),
+      MenuSeparator(),
+      MenuItemLabel(label: 'Exit', onClicked: (menuItem) async {
+        await windowManager.destroy();
+      }),
+    ]);
+
+    // set context menu
+    await _systemTray.setContextMenu(_menu);
+
+    // handle system tray event
+    _systemTray.registerSystemTrayEventHandler((eventName) {
+      if (eventName == kSystemTrayEventClick) {
+        Platform.isWindows ? windowManager.show() : _systemTray.popUpContextMenu();
+      } else if (eventName == kSystemTrayEventRightClick) {
+        Platform.isWindows ? _systemTray.popUpContextMenu() : windowManager.show();
+      }
+    });
   }
 
   @override
@@ -259,7 +296,12 @@ class _MainWindowState extends State<MainWindow> with WindowListener {
 
   @override
   void onWindowClose() async {
-    await windowManager.hide();
+    final settings = context.read<SettingsProvider>();
+    if (settings.minimizeToTray) {
+      await windowManager.hide();
+    } else {
+      await windowManager.destroy();
+    }
   }
 }
 

@@ -14,11 +14,13 @@ class ScreenTimeProvider extends ChangeNotifier {
   int _totalSecondsToday = 0;
   DateTime _selectedDate = DateTime.now();
   int _selectedDays = 1; // 1 = today, 7 = week, 30 = month
+  bool _isAscending = false;
 
   // Usage data
   List<AppUsage> _todayUsage = [];
   List<AggregatedAppUsage> _aggregatedUsage = [];
   List<Map<String, dynamic>> _dailyUsage = [];
+  List<String> _productiveApps = [];
 
   // Getters
   bool get isTracking => _isTracking;
@@ -27,6 +29,7 @@ class ScreenTimeProvider extends ChangeNotifier {
   int get totalSecondsToday => _totalSecondsToday;
   DateTime get selectedDate => _selectedDate;
   int get selectedDays => _selectedDays;
+  bool get isAscending => _isAscending;
   List<AppUsage> get todayUsage => _todayUsage;
   List<AggregatedAppUsage> get aggregatedUsage => _aggregatedUsage;
   List<Map<String, dynamic>> get dailyUsage => _dailyUsage;
@@ -43,6 +46,24 @@ class ScreenTimeProvider extends ChangeNotifier {
     } else {
       return '${seconds}s';
     }
+  }
+
+  double get focusScore {
+    if (_totalSecondsToday == 0) return 100.0;
+
+    int productiveSeconds = 0;
+    for (final app in _aggregatedUsage) {
+      if (_isProductive(app.processName) || _isProductive(app.displayName)) {
+        productiveSeconds += app.totalSeconds;
+      }
+    }
+
+    return (productiveSeconds / _totalSecondsToday) * 100;
+  }
+
+  bool _isProductive(String name) {
+    return _productiveApps.any((app) =>
+        name.toLowerCase().contains(app.toLowerCase()));
   }
 
   ScreenTimeProvider() {
@@ -90,6 +111,20 @@ class ScreenTimeProvider extends ChangeNotifier {
     }
   }
 
+  void toggleSortOrder() {
+    _isAscending = !_isAscending;
+    _sortAggregatedUsage();
+    notifyListeners();
+  }
+
+  void _sortAggregatedUsage() {
+    if (_isAscending) {
+      _aggregatedUsage.sort((a, b) => a.totalSeconds.compareTo(b.totalSeconds));
+    } else {
+      _aggregatedUsage.sort((a, b) => b.totalSeconds.compareTo(a.totalSeconds));
+    }
+  }
+
   // Methods to update settings
   void setTrackingInterval(int seconds) {
     _processTracker.setTrackingInterval(seconds);
@@ -97,6 +132,11 @@ class ScreenTimeProvider extends ChangeNotifier {
 
   void setIgnoredApps(List<String> apps) {
     _processTracker.customIgnoredApps = apps;
+  }
+
+  void setProductiveApps(List<String> apps) {
+    _productiveApps = apps;
+    notifyListeners();
   }
 
   int get trackingInterval => _processTracker.trackingInterval;
@@ -152,7 +192,7 @@ class ScreenTimeProvider extends ChangeNotifier {
     }).toList();
 
     // Sort by usage
-    _aggregatedUsage.sort((a, b) => b.totalSeconds.compareTo(a.totalSeconds));
+    _sortAggregatedUsage();
 
     notifyListeners();
   }

@@ -578,10 +578,11 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 20),
                       Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _buildLegend(provider, theme, isLight, blur: settings.blurAppNames),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: _buildLegend(provider, theme, isLight, blur: settings.blurAppNames),
+                          ),
                         ),
                       ),
                     ],
@@ -606,7 +607,6 @@ class HomeScreen extends StatelessWidget {
     ];
 
     return provider.aggregatedUsage
-        .take(6)
         .toList()
         .asMap()
         .entries
@@ -639,7 +639,6 @@ class HomeScreen extends StatelessWidget {
     ];
 
     return provider.aggregatedUsage
-        .take(6)
         .toList()
         .asMap()
         .entries
@@ -689,6 +688,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context, provider, settings, child) {
         // Sync settings with provider
         provider.setIgnoredApps(settings.ignoredApps);
+        provider.setProductiveApps(settings.productiveApps);
         if (provider.trackingInterval != settings.trackingInterval) {
           provider.setTrackingInterval(settings.trackingInterval);
         }
@@ -716,10 +716,13 @@ class HomeScreen extends StatelessWidget {
                     'Top Applications',
                     style: theme.typography.bodyStrong,
                   ),
-                  Icon(
-                    FluentIcons.sort,
-                    size: 14,
-                    color: isLight ? Colors.grey[100] : Colors.grey[120],
+                  IconButton(
+                    icon: Icon(
+                      provider.isAscending ? FluentIcons.sort_up : FluentIcons.sort_down,
+                      size: 14,
+                      color: isLight ? Colors.grey[100] : Colors.grey[120],
+                    ),
+                    onPressed: () => provider.toggleSortOrder(),
                   ),
                 ],
               ),
@@ -820,8 +823,8 @@ class HomeScreen extends StatelessWidget {
               _SummaryRow(
                 icon: FluentIcons.red_eye,
                 label: 'Focus score',
-                value: provider.aggregatedUsage.isNotEmpty 
-                    ? '${(100 - provider.aggregatedUsage.length * 5).clamp(0, 100)}%'
+                value: provider.totalSecondsToday > 0 
+                    ? '${provider.focusScore.toStringAsFixed(0)}%'
                     : '—',
                 valueColor: Colors.green,
                 isLight: isLight,
@@ -841,8 +844,12 @@ class HomeScreen extends StatelessWidget {
         final todayHours = todaySeconds ~/ 3600;
         final todayMinutes = (todaySeconds % 3600) ~/ 60;
         
-        // Simulate yesterday's data (in real app, fetch from database)
-        final yesterdaySeconds = (todaySeconds * 0.85).round();
+        // Fetch real yesterday data
+        int yesterdaySeconds = 0;
+        if (provider.dailyUsage.length >= 2) {
+           yesterdaySeconds = provider.dailyUsage[1]['usageSeconds'] ?? 0;
+        }
+
         final yesterdayHours = yesterdaySeconds ~/ 3600;
         final yesterdayMinutes = (yesterdaySeconds % 3600) ~/ 60;
         

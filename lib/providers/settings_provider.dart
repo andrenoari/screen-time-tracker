@@ -16,6 +16,7 @@ class SettingsProvider with ChangeNotifier {
   int _idleTimeout = 5; // minutes
   int _trackingInterval = 1; // seconds
   List<String> _ignoredApps = [];
+  List<String> _productiveApps = [];
 
   // Goals Settings
   bool _enableDailyGoal = false;
@@ -38,6 +39,7 @@ class SettingsProvider with ChangeNotifier {
   int get idleTimeout => _idleTimeout;
   int get trackingInterval => _trackingInterval;
   List<String> get ignoredApps => List.unmodifiable(_ignoredApps);
+  List<String> get productiveApps => List.unmodifiable(_productiveApps);
   bool get enableDailyGoal => _enableDailyGoal;
   int get dailyGoalHours => _dailyGoalHours;
   bool get enableBreakReminders => _enableBreakReminders;
@@ -58,6 +60,7 @@ class SettingsProvider with ChangeNotifier {
     _idleTimeout = _prefs.getInt('idleTimeout') ?? 5;
     _trackingInterval = _prefs.getInt('trackingInterval') ?? 1;
     _ignoredApps = _prefs.getStringList('ignoredApps') ?? [];
+    _productiveApps = _prefs.getStringList('productiveApps') ?? [];
     _enableDailyGoal = _prefs.getBool('enableDailyGoal') ?? false;
     _dailyGoalHours = _prefs.getInt('dailyGoalHours') ?? 4;
     _enableBreakReminders = _prefs.getBool('enableBreakReminders') ?? false;
@@ -158,6 +161,22 @@ class SettingsProvider with ChangeNotifier {
     );
   }
 
+  Future<void> addProductiveApp(String appName) async {
+    if (_productiveApps.contains(appName)) return;
+    
+    _productiveApps.add(appName);
+    await _prefs.setStringList('productiveApps', _productiveApps);
+    notifyListeners();
+  }
+
+  Future<void> removeProductiveApp(String appName) async {
+    if (!_productiveApps.contains(appName)) return;
+    
+    _productiveApps.remove(appName);
+    await _prefs.setStringList('productiveApps', _productiveApps);
+    notifyListeners();
+  }
+
   // Goals Settings Setters
   Future<void> setEnableDailyGoal(bool value) async {
     if (_enableDailyGoal == value) return;
@@ -225,6 +244,7 @@ class SettingsProvider with ChangeNotifier {
     _idleTimeout = 5;
     _trackingInterval = 1;
     _ignoredApps = [];
+    _productiveApps = [];
     _enableDailyGoal = false;
     _dailyGoalHours = 4;
     _enableBreakReminders = false;
