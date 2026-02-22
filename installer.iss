@@ -2,7 +2,7 @@
 ; Download Inno Setup from: https://jrsoftware.org/isdl.php
 
 #define MyAppName "Screen Time Tracker"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.5"
 #define MyAppPublisher "Screen Time"
 #define MyAppURL "https://github.com/your-username/screen-time-tracker"
 #define MyAppExeName "screen_time_tracker.exe"
