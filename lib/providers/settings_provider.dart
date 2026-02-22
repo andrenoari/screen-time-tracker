@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'dart:io';
+import 'dart:convert';
+import '../models/app_block.dart';
 
 class SettingsProvider with ChangeNotifier {
   late SharedPreferences _prefs;
@@ -31,6 +33,9 @@ class SettingsProvider with ChangeNotifier {
   // Data Settings
   int _dataRetentionDays = 30;
 
+  // Blocking Settings
+  List<AppBlock> _blockRules = [];
+
   // Getters
   bool get isInitialized => _isInitialized;
   bool get startWithWindows => _startWithWindows;
@@ -47,6 +52,7 @@ class SettingsProvider with ChangeNotifier {
   bool get blurAppNames => _blurAppNames;
   bool get pauseOnLock => _pauseOnLock;
   int get dataRetentionDays => _dataRetentionDays;
+  List<AppBlock> get blockRules => List.unmodifiable(_blockRules);
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -68,6 +74,12 @@ class SettingsProvider with ChangeNotifier {
     _blurAppNames = _prefs.getBool('blurAppNames') ?? false;
     _pauseOnLock = _prefs.getBool('pauseOnLock') ?? true;
     _dataRetentionDays = _prefs.getInt('dataRetentionDays') ?? 30;
+
+    // Load block rules
+    final rulesJson = _prefs.getStringList('blockRules') ?? [];
+    _blockRules = rulesJson
+        .map((json) => AppBlock.fromJson(jsonDecode(json)))
+        .toList();
 
     // Setup launch at startup
     if (Platform.isWindows) {
@@ -236,6 +248,35 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Blocking Settings Setters
+  Future<void> addBlockRule(AppBlock rule) async {
+    _blockRules.add(rule);
+    await _saveBlockRules();
+    notifyListeners();
+  }
+
+  Future<void> removeBlockRule(String processName) async {
+    _blockRules.removeWhere((r) => r.processName == processName);
+    await _saveBlockRules();
+    notifyListeners();
+  }
+
+  Future<void> updateBlockRule(AppBlock updatedRule) async {
+    final index = _blockRules.indexWhere((r) => r.processName == updatedRule.processName);
+    if (index != -1) {
+      _blockRules[index] = updatedRule;
+      await _saveBlockRules();
+      notifyListeners();
+    }
+  }
+
+  Future<void> _saveBlockRules() async {
+    final rulesJson = _blockRules
+        .map((rule) => jsonEncode(rule.toJson()))
+        .toList();
+    await _prefs.setStringList('blockRules', rulesJson);
+  }
+
   // Reset all settings to defaults
   Future<void> resetToDefaults() async {
     _startWithWindows = false;
@@ -252,6 +293,7 @@ class SettingsProvider with ChangeNotifier {
     _blurAppNames = false;
     _pauseOnLock = true;
     _dataRetentionDays = 30;
+    _blockRules = [];
 
     await _prefs.clear();
     

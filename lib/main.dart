@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart' as acrylic;
@@ -12,6 +13,9 @@ import 'providers/settings_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/statistics_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/blocking_screen.dart';
+import 'services/analytics_service.dart';
+
 
 // Global window effect manager
 class WindowEffectManager {
@@ -49,8 +53,38 @@ class WindowEffectManager {
   }
 }
 
+// Shortcut Intents
+class DashboardIntent extends Intent {
+  const DashboardIntent();
+}
+
+class StatisticsIntent extends Intent {
+  const StatisticsIntent();
+}
+
+class SettingsIntent extends Intent {
+  const SettingsIntent();
+}
+
+class PauseResumeIntent extends Intent {
+  const PauseResumeIntent();
+}
+
+class RefreshIntent extends Intent {
+  const RefreshIntent();
+}
+
+class QuitIntent extends Intent {
+  const QuitIntent();
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize analytics
+  await AnalyticsService().initialize();
+  await AnalyticsService().trackEvent('App Launch');
+
 
   // Initialize flutter_acrylic FIRST
   await acrylic.Window.initialize();
@@ -112,7 +146,11 @@ class _ScreenTimeAppState extends State<ScreenTimeApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ScreenTimeProvider()),
+        ChangeNotifierProvider(
+          create: (_) => ScreenTimeProvider(
+            initialBlockRules: widget.settingsProvider.blockRules,
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => ThemeProvider(widget.prefs)),
         ChangeNotifierProvider.value(value: widget.settingsProvider),
       ],
@@ -121,9 +159,11 @@ class _ScreenTimeAppState extends State<ScreenTimeApp> {
           // Update window effect when theme changes
           WindowEffectManager.updateTheme(themeProvider.isDarkMode);
           
-          final effectiveThemeMode = themeProvider.isDarkMode 
-              ? ThemeMode.dark 
-              : ThemeMode.light;
+          final effectiveThemeMode = themeProvider.themeMode;
+          
+          final AccentColor accentColor = themeProvider.useSystemAccentColor
+              ? SystemTheme.accentColor.accent.toAccentColor()
+              : themeProvider.customAccentColor.toAccentColor();
           
           return FluentApp(
             title: 'Screen Time',
@@ -131,7 +171,7 @@ class _ScreenTimeAppState extends State<ScreenTimeApp> {
             themeMode: effectiveThemeMode,
             darkTheme: FluentThemeData(
               brightness: Brightness.dark,
-              accentColor: SystemTheme.accentColor.accent.toAccentColor(),
+              accentColor: accentColor,
               visualDensity: VisualDensity.standard,
               scaffoldBackgroundColor: Colors.transparent,
               micaBackgroundColor: Colors.transparent,
@@ -141,7 +181,7 @@ class _ScreenTimeAppState extends State<ScreenTimeApp> {
             ),
             theme: FluentThemeData(
               brightness: Brightness.light,
-              accentColor: SystemTheme.accentColor.accent.toAccentColor(),
+              accentColor: accentColor,
               visualDensity: VisualDensity.standard,
               scaffoldBackgroundColor: Colors.transparent,
               micaBackgroundColor: Colors.transparent,
@@ -177,35 +217,39 @@ class _MainWindowState extends State<MainWindow> with WindowListener {
   }
 
   Future<void> _initSystemTray() async {
-    String path = Platform.isWindows ? 'windows/runner/resources/app_icon.ico' : 'AppIcon';
+    String path = Platform.isWindows ? 'assets/Screen Time Logo.png' : 'AppIcon';
 
-    // We first init the systray menu
-    await _systemTray.initSystemTray(
-      title: "Screen Time",
-      iconPath: path,
-    );
+    try {
+      // We first init the systray menu
+      await _systemTray.initSystemTray(
+        title: "Screen Time",
+        iconPath: path,
+      );
 
-    // create context menu
-    await _menu.buildFrom([
-      MenuItemLabel(label: 'Show', onClicked: (menuItem) => windowManager.show()),
-      MenuItemLabel(label: 'Hide', onClicked: (menuItem) => windowManager.hide()),
-      MenuSeparator(),
-      MenuItemLabel(label: 'Exit', onClicked: (menuItem) async {
-        await windowManager.destroy();
-      }),
-    ]);
+      // create context menu
+      await _menu.buildFrom([
+        MenuItemLabel(label: 'Show', onClicked: (menuItem) => windowManager.show()),
+        MenuItemLabel(label: 'Hide', onClicked: (menuItem) => windowManager.hide()),
+        MenuSeparator(),
+        MenuItemLabel(label: 'Exit', onClicked: (menuItem) async {
+          await windowManager.destroy();
+        }),
+      ]);
 
-    // set context menu
-    await _systemTray.setContextMenu(_menu);
+      // set context menu
+      await _systemTray.setContextMenu(_menu);
 
-    // handle system tray event
-    _systemTray.registerSystemTrayEventHandler((eventName) {
-      if (eventName == kSystemTrayEventClick) {
-        Platform.isWindows ? windowManager.show() : _systemTray.popUpContextMenu();
-      } else if (eventName == kSystemTrayEventRightClick) {
-        Platform.isWindows ? _systemTray.popUpContextMenu() : windowManager.show();
-      }
-    });
+      // handle system tray event
+      _systemTray.registerSystemTrayEventHandler((eventName) {
+        if (eventName == kSystemTrayEventClick) {
+          Platform.isWindows ? windowManager.show() : _systemTray.popUpContextMenu();
+        } else if (eventName == kSystemTrayEventRightClick) {
+          Platform.isWindows ? _systemTray.popUpContextMenu() : windowManager.show();
+        }
+      });
+    } catch (e) {
+      debugPrint("System Tray Init Error: $e");
+    }
   }
 
   @override
@@ -217,89 +261,147 @@ class _MainWindowState extends State<MainWindow> with WindowListener {
   @override
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
-    
-    return NavigationView(
-      appBar: NavigationAppBar(
-        automaticallyImplyLeading: false,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
-          child: Icon(
-            FluentIcons.timer,
-            size: 20,
-            color: theme.typography.body?.color,
-          ),
-        ),
-        title: DragToMoveArea(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Screen Time',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: theme.typography.body?.color,
+    return Shortcuts(
+        shortcuts: <ShortcutActivator, Intent>{
+          const SingleActivator(LogicalKeyboardKey.keyH, control: true): const DashboardIntent(),
+          const SingleActivator(LogicalKeyboardKey.keyS, control: true): const StatisticsIntent(),
+          const SingleActivator(LogicalKeyboardKey.comma, control: true): const SettingsIntent(),
+          const SingleActivator(LogicalKeyboardKey.keyP, control: true): const PauseResumeIntent(),
+          const SingleActivator(LogicalKeyboardKey.keyR, control: true): const RefreshIntent(),
+          const SingleActivator(LogicalKeyboardKey.keyQ, control: true): const QuitIntent(),
+        },
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            DashboardIntent: CallbackAction<DashboardIntent>(
+              onInvoke: (intent) => setState(() => _currentIndex = 0),
+            ),
+            StatisticsIntent: CallbackAction<StatisticsIntent>(
+              onInvoke: (intent) => setState(() => _currentIndex = 1),
+            ),
+            SettingsIntent: CallbackAction<SettingsIntent>(
+              onInvoke: (intent) => setState(() => _currentIndex = 2), // Index of settings in NavigationPane
+            ),
+            PauseResumeIntent: CallbackAction<PauseResumeIntent>(
+              onInvoke: (intent) {
+                final provider = context.read<ScreenTimeProvider>();
+                provider.toggleTracking();
+                return null;
+              },
+            ),
+            RefreshIntent: CallbackAction<RefreshIntent>(
+              onInvoke: (intent) {
+                final provider = context.read<ScreenTimeProvider>();
+                provider.refreshData();
+                return null;
+              },
+            ),
+            QuitIntent: CallbackAction<QuitIntent>(
+              onInvoke: (intent) async {
+                await windowManager.destroy();
+                return null;
+              },
+            ),
+          },
+          child: Focus(
+            autofocus: true,
+            child: NavigationView(
+            appBar: NavigationAppBar(
+              automaticallyImplyLeading: false,
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 12.0),
+                child: Image.asset(
+                  'assets/Screen Time Logo.png',
+                  width: 20,
+                  height: 20,
+                ),
+              ),
+              title: DragToMoveArea(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Screen Time',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: theme.typography.body?.color,
+                    ),
+                  ),
+                ),
+              ),
+              actions: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const _TrackingStatusBadge(),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 138,
+                    height: 50,
+                    child: WindowCaption(
+                      brightness: theme.brightness,
+                      backgroundColor: Colors.transparent,
+                    ),
+                  ),
+                ],
               ),
             ),
+            pane: NavigationPane(
+              selected: _currentIndex,
+              onChanged: (index) => setState(() => _currentIndex = index),
+              displayMode: PaneDisplayMode.compact,
+              items: [
+                PaneItem(
+                  icon: const Icon(FluentIcons.home),
+                  title: const Text('Dashboard'),
+                  body: _AnimatedBody(
+                    key: const ValueKey('dashboard'),
+                    child: const HomeScreen(),
+                  ),
+                ),
+                PaneItem(
+                  icon: const Icon(FluentIcons.chart),
+                  title: const Text('Statistics'),
+                  body: _AnimatedBody(
+                    key: const ValueKey('statistics'),
+                    child: const StatisticsScreen(),
+                  ),
+                ),
+                PaneItem(
+                  icon: const Icon(FluentIcons.shield_alert),
+                  title: const Text('App Blocking'),
+                  body: _AnimatedBody(
+                    key: const ValueKey('blocking'),
+                    child: const BlockingScreen(),
+                  ),
+                ),
+              ],
+              footerItems: [
+                PaneItem(
+                  icon: const Icon(FluentIcons.settings),
+                  title: const Text('Settings'),
+                  body: _AnimatedBody(
+                    key: const ValueKey('settings'),
+                    child: const SettingsScreen(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            const _TrackingStatusBadge(),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 138,
-              height: 50,
-              child: WindowCaption(
-                brightness: theme.brightness,
-                backgroundColor: Colors.transparent,
-              ),
-            ),
-          ],
-        ),
-      ),
-      pane: NavigationPane(
-        selected: _currentIndex,
-        onChanged: (index) => setState(() => _currentIndex = index),
-        displayMode: PaneDisplayMode.compact,
-        items: [
-          PaneItem(
-            icon: const Icon(FluentIcons.home),
-            title: const Text('Dashboard'),
-            body: _AnimatedBody(
-              key: const ValueKey('dashboard'),
-              child: const HomeScreen(),
-            ),
-          ),
-          PaneItem(
-            icon: const Icon(FluentIcons.chart),
-            title: const Text('Statistics'),
-            body: _AnimatedBody(
-              key: const ValueKey('statistics'),
-              child: const StatisticsScreen(),
-            ),
-          ),
-        ],
-        footerItems: [
-          PaneItem(
-            icon: const Icon(FluentIcons.settings),
-            title: const Text('Settings'),
-            body: _AnimatedBody(
-              key: const ValueKey('settings'),
-              child: const SettingsScreen(),
-            ),
-          ),
-        ],
       ),
     );
   }
 
   @override
   void onWindowClose() async {
-    final settings = context.read<SettingsProvider>();
-    if (settings.minimizeToTray) {
-      await windowManager.hide();
-    } else {
+    try {
+      final settings = context.read<SettingsProvider>();
+      if (settings.minimizeToTray) {
+        await windowManager.hide();
+      } else {
+        await windowManager.destroy();
+      }
+    } catch (e) {
+      // Fallback if provider read fails
       await windowManager.destroy();
     }
   }

@@ -4,9 +4,11 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   flutter_acrylic
+  local_notifier
   screen_retriever
   system_theme
   system_tray
+  url_launcher_windows
   window_manager
 )
 

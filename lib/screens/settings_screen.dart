@@ -3,6 +3,13 @@ import 'package:provider/provider.dart';
 import '../providers/screen_time_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/installed_apps_service.dart';
+import '../services/data_sync_service.dart';
+import '../services/database_service.dart';
+import '../services/update_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter/services.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,6 +19,19 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  static final List<Color> _accentColors = [
+    Colors.blue,
+    Colors.teal,
+    Colors.green,
+    Colors.orange,
+    Colors.red,
+    Colors.magenta,
+    Colors.purple,
+    Colors.grey,
+  ];
+
+  Future<PackageInfo>? _packageInfoFuture;
+
   @override
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
@@ -53,33 +73,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Consumer<ThemeProvider>(
                       builder: (context, themeProvider, child) {
-                        return _SettingsRow(
-                          icon: FluentIcons.light,
-                          title: 'Theme',
-                          subtitle: 'Choose light or dark mode',
-                          isLight: isLight,
-                          child: ComboBox<ThemeMode>(
-                            value: themeProvider.themeMode,
-                            items: const [
-                              ComboBoxItem(
-                                value: ThemeMode.system,
-                                child: Text('System default'),
+                        return Column(
+                          children: [
+                            _SettingsRow(
+                              icon: FluentIcons.light,
+                              title: 'Theme',
+                              subtitle: 'Choose light or dark mode',
+                              isLight: isLight,
+                              child: ComboBox<ThemeMode>(
+                                value: themeProvider.themeMode,
+                                items: const [
+                                  ComboBoxItem(
+                                    value: ThemeMode.system,
+                                    child: Text('System default'),
+                                  ),
+                                  ComboBoxItem(
+                                    value: ThemeMode.light,
+                                    child: Text('Light'),
+                                  ),
+                                  ComboBoxItem(
+                                    value: ThemeMode.dark,
+                                    child: Text('Dark'),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    themeProvider.setThemeMode(value);
+                                  }
+                                },
                               ),
-                              ComboBoxItem(
-                                value: ThemeMode.light,
-                                child: Text('Light'),
+                            ),
+                            _Divider(isLight: isLight),
+                            _SettingsRow(
+                              icon: FluentIcons.color,
+                              title: 'Use Windows accent color',
+                              subtitle: 'Sync with your system personalization',
+                              isLight: isLight,
+                              child: ToggleSwitch(
+                                checked: themeProvider.useSystemAccentColor,
+                                onChanged: (value) =>
+                                    themeProvider.setUseSystemAccentColor(value),
                               ),
-                              ComboBoxItem(
-                                value: ThemeMode.dark,
-                                child: Text('Dark'),
+                            ),
+                            if (!themeProvider.useSystemAccentColor) ...[
+                              _Divider(isLight: isLight),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Custom accent color',
+                                      style: theme.typography.body,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      height: 40,
+                                      child: ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: _accentColors.length,
+                                        separatorBuilder: (context, index) =>
+                                            const SizedBox(width: 8),
+                                        itemBuilder: (context, index) {
+                                          final color = _accentColors[index];
+                                          final isSelected =
+                                              themeProvider.customAccentColor.value ==
+                                                  color.value;
+                                          return GestureDetector(
+                                            onTap: () =>
+                                                themeProvider.setCustomAccentColor(color),
+                                            child: Container(
+                                              width: 32,
+                                              height: 32,
+                                              decoration: BoxDecoration(
+                                                color: color,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: isSelected
+                                                      ? (isLight
+                                                          ? Colors.black
+                                                          : Colors.white)
+                                                      : Colors.transparent,
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              child: isSelected
+                                                  ? Icon(
+                                                      FluentIcons.check_mark,
+                                                      size: 14,
+                                                      color: color.computeLuminance() > 0.5
+                                                          ? Colors.black
+                                                          : Colors.white,
+                                                    )
+                                                  : null,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
-                            onChanged: (value) {
-                              if (value != null) {
-                                themeProvider.setThemeMode(value);
-                              }
-                            },
-                          ),
+                          ],
                         );
                       },
                     ),
@@ -101,7 +200,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       isLight: isLight,
                       child: ToggleSwitch(
                         checked: settings.startWithWindows,
-                        onChanged: (value) => settings.setStartWithWindows(value),
+                        onChanged: (value) =>
+                            settings.setStartWithWindows(value),
                       ),
                     ),
                     _Divider(isLight: isLight),
@@ -123,7 +223,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       isLight: isLight,
                       child: ToggleSwitch(
                         checked: settings.showNotifications,
-                        onChanged: (value) => settings.setShowNotifications(value),
+                        onChanged: (value) =>
+                            settings.setShowNotifications(value),
                       ),
                     ),
                   ],
@@ -140,13 +241,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _SettingsRow(
                       icon: FluentIcons.bullseye_target,
                       title: 'Daily screen time goal',
-                      subtitle: settings.enableDailyGoal 
+                      subtitle: settings.enableDailyGoal
                           ? 'Limit: ${settings.dailyGoalHours} hours per day'
                           : 'Set a daily usage limit',
                       isLight: isLight,
                       child: ToggleSwitch(
                         checked: settings.enableDailyGoal,
-                        onChanged: (value) => settings.setEnableDailyGoal(value),
+                        onChanged: (value) =>
+                            settings.setEnableDailyGoal(value),
                       ),
                     ),
                     if (settings.enableDailyGoal) ...[
@@ -159,10 +261,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: ComboBox<int>(
                           value: settings.dailyGoalHours,
                           items: [1, 2, 3, 4, 5, 6, 8, 10, 12]
-                              .map((hours) => ComboBoxItem(
-                                    value: hours,
-                                    child: Text('$hours hours'),
-                                  ))
+                              .map(
+                                (hours) => ComboBoxItem(
+                                  value: hours,
+                                  child: Text('$hours hours'),
+                                ),
+                              )
                               .toList(),
                           onChanged: (value) {
                             if (value != null) {
@@ -182,7 +286,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       isLight: isLight,
                       child: ToggleSwitch(
                         checked: settings.enableBreakReminders,
-                        onChanged: (value) => settings.setEnableBreakReminders(value),
+                        onChanged: (value) =>
+                            settings.setEnableBreakReminders(value),
                       ),
                     ),
                     if (settings.enableBreakReminders) ...[
@@ -195,10 +300,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: ComboBox<int>(
                           value: settings.breakReminderInterval,
                           items: [15, 30, 45, 60, 90, 120]
-                              .map((mins) => ComboBoxItem(
-                                    value: mins,
-                                    child: Text('$mins min'),
-                                  ))
+                              .map(
+                                (mins) => ComboBoxItem(
+                                  value: mins,
+                                  child: Text('$mins min'),
+                                ),
+                              )
                               .toList(),
                           onChanged: (value) {
                             if (value != null) {
@@ -232,22 +339,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           isLight: isLight,
                           child: FilledButton(
                             onPressed: () => provider.toggleTracking(),
-                            child: Text(provider.isTracking ? 'Pause' : 'Resume'),
+                            child: Text(
+                              provider.isTracking ? 'Pause' : 'Resume',
+                            ),
                           ),
                         ),
                         _Divider(isLight: isLight),
                         _SettingsRow(
                           icon: FluentIcons.timer,
                           title: 'Idle timeout',
-                          subtitle: 'Pause tracking after ${settings.idleTimeout} min of inactivity',
+                          subtitle:
+                              'Pause tracking after ${settings.idleTimeout} min of inactivity',
                           isLight: isLight,
                           child: ComboBox<int>(
                             value: settings.idleTimeout,
                             items: [1, 2, 5, 10, 15, 30]
-                                .map((mins) => ComboBoxItem(
-                                      value: mins,
-                                      child: Text('$mins min'),
-                                    ))
+                                .map(
+                                  (mins) => ComboBoxItem(
+                                    value: mins,
+                                    child: Text('$mins min'),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               if (value != null) {
@@ -260,15 +372,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SettingsRow(
                           icon: FluentIcons.processing,
                           title: 'Tracking precision',
-                          subtitle: 'Check active window every ${settings.trackingInterval} second(s)',
+                          subtitle:
+                              'Check active window every ${settings.trackingInterval} second(s)',
                           isLight: isLight,
                           child: ComboBox<int>(
                             value: settings.trackingInterval,
                             items: [1, 2, 5, 10]
-                                .map((sec) => ComboBoxItem(
-                                      value: sec,
-                                      child: Text('$sec sec'),
-                                    ))
+                                .map(
+                                  (sec) => ComboBoxItem(
+                                    value: sec,
+                                    child: Text('$sec sec'),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               if (value != null) {
@@ -281,22 +396,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SettingsRow(
                           icon: FluentIcons.blocked2,
                           title: 'Ignored applications',
-                          subtitle: '${settings.ignoredApps.length} apps excluded from tracking',
+                          subtitle:
+                              '${settings.ignoredApps.length} apps excluded from tracking',
                           isLight: isLight,
                           child: Button(
                             child: const Text('Manage'),
-                            onPressed: () => _showIgnoredAppsDialog(context, settings),
+                            onPressed: () =>
+                                _showIgnoredAppsDialog(context, settings),
                           ),
                         ),
                         _Divider(isLight: isLight),
                         _SettingsRow(
                           icon: FluentIcons.favorite_star,
                           title: 'Productive applications',
-                          subtitle: '${settings.productiveApps.length} apps counted towards focus score',
+                          subtitle:
+                              '${settings.productiveApps.length} apps counted towards focus score',
                           isLight: isLight,
                           child: Button(
                             child: const Text('Manage'),
-                            onPressed: () => _showProductiveAppsDialog(context, settings),
+                            onPressed: () =>
+                                _showProductiveAppsDialog(context, settings),
                           ),
                         ),
                       ],
@@ -347,15 +466,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _SettingsRow(
                       icon: FluentIcons.database,
                       title: 'Data retention',
-                      subtitle: 'Keep usage data for ${settings.dataRetentionDays} days',
+                      subtitle:
+                          'Keep usage data for ${settings.dataRetentionDays} days',
                       isLight: isLight,
                       child: ComboBox<int>(
                         value: settings.dataRetentionDays,
                         items: [7, 14, 30, 60, 90, 365]
-                            .map((days) => ComboBoxItem(
-                                  value: days,
-                                  child: Text('$days days'),
-                                ))
+                            .map(
+                              (days) => ComboBoxItem(
+                                value: days,
+                                child: Text('$days days'),
+                              ),
+                            )
                             .toList(),
                         onChanged: (value) {
                           if (value != null) {
@@ -394,7 +516,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       isLight: isLight,
                       child: Button(
                         style: ButtonStyle(
-                          backgroundColor: WidgetStateProperty.resolveWith((states) {
+                          backgroundColor: WidgetStateProperty.resolveWith((
+                            states,
+                          ) {
                             if (states.isHovered) {
                               return Colors.red.withOpacity(0.15);
                             }
@@ -419,15 +543,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsCard(
                   isLight: isLight,
                   children: [
-                    _SettingsRow(
-                      icon: FluentIcons.info,
-                      title: 'Screen Time',
-                      subtitle: 'Version 1.0.0',
-                      isLight: isLight,
-                      child: Button(
-                        child: const Text('Check for updates'),
-                        onPressed: () => _showUpdateCheckDialog(context),
-                      ),
+                    FutureBuilder<PackageInfo>(
+                      future: _packageInfoFuture ??= PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final version = snapshot.data?.version ?? '1.0.0';
+                        return _SettingsRow(
+                          icon: FluentIcons.info,
+                          title: 'Screen Time',
+                          subtitle: 'Version $version',
+                          isLight: isLight,
+                          child: Button(
+                            child: const Text('Check for updates'),
+                            onPressed: () => _showUpdateCheckDialog(context),
+                          ),
+                        );
+                      },
                     ),
                     _Divider(isLight: isLight),
                     _SettingsRow(
@@ -437,7 +567,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       isLight: isLight,
                       child: Button(
                         child: const Text('Reset'),
-                        onPressed: () => _showResetSettingsDialog(context, settings),
+                        onPressed: () =>
+                            _showResetSettingsDialog(context, settings),
                       ),
                     ),
                     _Divider(isLight: isLight),
@@ -453,6 +584,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 28),
+
+                // Feedback Section
+                _SectionHeader(title: 'Feedback & Support', isLight: isLight),
+                const SizedBox(height: 12),
+                _SettingsCard(
+                  isLight: isLight,
+                  children: [
+                    _SettingsRow(
+                      icon: FluentIcons.send,
+                      title: 'Telegram',
+                      isLight: isLight,
+                      child: Button(
+                        child: const Text('Chat'),
+                        onPressed: () async {
+                          final url = Uri.parse('https://t.me/arifulislamkhan');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                        },
+                      ),
+                    ),
+                    _Divider(isLight: isLight),
+                    _SettingsRow(
+                      icon: FluentIcons.globe,
+                      title: 'X (Twitter)',
+                      isLight: isLight,
+                      child: Button(
+                        child: const Text('Follow'),
+                        onPressed: () async {
+                          final url = Uri.parse('https://x.com/andrenoari');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                        },
+                      ),
+                    ),
+                    _Divider(isLight: isLight),
+                    _SettingsRow(
+                      icon: FluentIcons.mail,
+                      title: 'Email',
+                      isLight: isLight,
+                      child: Button(
+                        child: const Text('Email'),
+                        onPressed: () async {
+                          final url = Uri.parse('mailto:contact@ariful.work');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+
+                // Support the Developer Section
+                _SectionHeader(title: 'Support the Developer', isLight: isLight),
+                const SizedBox(height: 12),
+                _SettingsCard(
+                  isLight: isLight,
+                  children: [
+                    _SettingsRow(
+                      icon: FluentIcons.payment_card,
+                      title: 'UPI',
+                      subtitle: 'Support via UPI',
+                      isLight: isLight,
+                      child: Button(
+                        child: const Text('Support'),
+                        onPressed: () => _showUPIDialog(context),
+                      ),
+                    ),
+                    _Divider(isLight: isLight),
+                    _SettingsRow(
+                      icon: FluentIcons.payment_card,
+                      title: 'PayPal',
+                      subtitle: 'Support via PayPal',
+                      isLight: isLight,
+                      child: Button(
+                        child: const Text('Support'),
+                        onPressed: () async {
+                          final url = Uri.parse('https://paypal.me/arifulik');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                        },
+                      ),
+                    ),
+                    _Divider(isLight: isLight),
+                    _SettingsRow(
+                      icon: FluentIcons.coffee,
+                      title: 'Ko-fi',
+                      subtitle: 'Buy me a ko-fi',
+                      isLight: isLight,
+                      child: Button(
+                        child: const Text('Support'),
+                        onPressed: () async {
+                          final url = Uri.parse('https://ko-fi.com/andrenoari');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                        },
+                      ),
+                    ),
+                    _Divider(isLight: isLight),
+                    _SettingsRow(
+                      icon: FluentIcons.coffee_script,
+                      title: 'Buy Me a Coffee',
+                      subtitle: 'Support my work',
+                      isLight: isLight,
+                      child: Button(
+                        child: const Text('Support'),
+                        onPressed: () async {
+                          final url = Uri.parse('https://buymeacoffee.com/andrenoari');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
 
                 const SizedBox(height: 40),
               ],
@@ -463,150 +716,342 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showIgnoredAppsDialog(BuildContext context, SettingsProvider settings) async {
+  void _showIgnoredAppsDialog(
+    BuildContext context,
+    SettingsProvider settings,
+  ) async {
     final controller = TextEditingController();
-    
+    bool isLoadingApps = true;
+    bool hasStartedLoading = false;
+    List<RunningApp> runningApps = [];
+    RunningApp? selectedApp;
+
     await showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => ContentDialog(
-          title: const Text('Ignored Applications'),
-          content: SizedBox(
-            width: 400,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Apps in this list will not be tracked.'),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextBox(
-                        controller: controller,
-                        placeholder: 'Enter app name (e.g., notepad.exe)',
+        builder: (context, setDialogState) {
+          if (!hasStartedLoading) {
+            hasStartedLoading = true;
+            InstalledAppsService.getRunningApps().then((apps) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setDialogState(() {
+                    runningApps = apps;
+                    isLoadingApps = false;
+                  });
+                }
+              });
+            });
+          }
+
+          return ContentDialog(
+            title: const Text('Ignored Applications'),
+            content: SizedBox(
+              width: 500,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Apps in this list will not be tracked.'),
+                  const SizedBox(height: 16),
+
+                  // Running Apps Dropdown
+                  Text(
+                    'Select from running apps:',
+                    style: FluentTheme.of(context).typography.caption,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: isLoadingApps
+                            ? const ProgressRing(strokeWidth: 2)
+                            : ComboBox<RunningApp>(
+                                isExpanded: true,
+                                placeholder: const Text(
+                                  'Searching running apps...',
+                                ),
+                                value: selectedApp,
+                                items: runningApps.map((app) {
+                                  return ComboBoxItem<RunningApp>(
+                                    value: app,
+                                    child: Text(
+                                      '${app.windowTitle} (${app.processName})',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (app) {
+                                  if (app != null) {
+                                    setDialogState(() => selectedApp = app);
+                                  }
+                                },
+                              ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(FluentIcons.refresh),
+                        onPressed: () {
+                          setDialogState(() {
+                            isLoadingApps = true;
+                            hasStartedLoading = false;
+                            selectedApp = null;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        child: const Text('Add'),
+                        onPressed: selectedApp == null
+                            ? null
+                            : () async {
+                                await settings.addIgnoredApp(
+                                  selectedApp!.processName,
+                                );
+                                setDialogState(() => selectedApp = null);
+                              },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+
+                  // Manual input fallback
+                  Text(
+                    'Or type exact process name manually:',
+                    style: FluentTheme.of(context).typography.caption,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextBox(
+                          controller: controller,
+                          placeholder: 'e.g., notepad.exe',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        child: const Text('Add'),
+                        onPressed: () async {
+                          if (controller.text.isNotEmpty) {
+                            await settings.addIgnoredApp(controller.text);
+                            controller.clear();
+                            setDialogState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Active List
+                  if (settings.ignoredApps.isEmpty)
+                    const Text('No apps ignored yet.')
+                  else
+                    SizedBox(
+                      height: 150,
+                      child: ListView.builder(
+                        itemCount: settings.ignoredApps.length,
+                        itemBuilder: (context, index) {
+                          final app = settings.ignoredApps[index];
+                          return ListTile(
+                            title: Text(app),
+                            trailing: IconButton(
+                              icon: const Icon(FluentIcons.delete),
+                              onPressed: () async {
+                                await settings.removeIgnoredApp(app);
+                                setDialogState(() {});
+                              },
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      child: const Text('Add'),
-                      onPressed: () async {
-                        if (controller.text.isNotEmpty) {
-                          await settings.addIgnoredApp(controller.text);
-                          controller.clear();
-                          setDialogState(() {});
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (settings.ignoredApps.isEmpty)
-                  const Text('No apps ignored yet.')
-                else
-                  SizedBox(
-                    height: 150,
-                    child: ListView.builder(
-                      itemCount: settings.ignoredApps.length,
-                      itemBuilder: (context, index) {
-                        final app = settings.ignoredApps[index];
-                        return ListTile(
-                          title: Text(app),
-                          trailing: IconButton(
-                            icon: const Icon(FluentIcons.delete),
-                            onPressed: () async {
-                              await settings.removeIgnoredApp(app);
-                              setDialogState(() {});
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          actions: [
-            FilledButton(
-              child: const Text('Done'),
-              onPressed: () => Navigator.pop(dialogContext),
-            ),
-          ],
-        ),
+            actions: [
+              FilledButton(
+                child: const Text('Done'),
+                onPressed: () => Navigator.pop(dialogContext),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  void _showProductiveAppsDialog(BuildContext context, SettingsProvider settings) async {
+  void _showProductiveAppsDialog(
+    BuildContext context,
+    SettingsProvider settings,
+  ) async {
     final controller = TextEditingController();
-    
+    bool isLoadingApps = true;
+    bool hasStartedLoading = false;
+    List<RunningApp> runningApps = [];
+    RunningApp? selectedApp;
+
     await showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => ContentDialog(
-          title: const Text('Productive Applications'),
-          content: SizedBox(
-            width: 400,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Apps in this list will contribute to your Focus Score.'),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextBox(
-                        controller: controller,
-                        placeholder: 'Enter app name (e.g., Code.exe)',
+        builder: (context, setDialogState) {
+          if (!hasStartedLoading) {
+            hasStartedLoading = true;
+            InstalledAppsService.getRunningApps().then((apps) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setDialogState(() {
+                    runningApps = apps;
+                    isLoadingApps = false;
+                  });
+                }
+              });
+            });
+          }
+
+          return ContentDialog(
+            title: const Text('Productive Applications'),
+            content: SizedBox(
+              width: 500,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Apps in this list will contribute to your Focus Score.',
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Running Apps Dropdown
+                  Text(
+                    'Select from running apps:',
+                    style: FluentTheme.of(context).typography.caption,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: isLoadingApps
+                            ? const ProgressRing(strokeWidth: 2)
+                            : ComboBox<RunningApp>(
+                                isExpanded: true,
+                                placeholder: const Text(
+                                  'Searching running apps...',
+                                ),
+                                value: selectedApp,
+                                items: runningApps.map((app) {
+                                  return ComboBoxItem<RunningApp>(
+                                    value: app,
+                                    child: Text(
+                                      '${app.windowTitle} (${app.processName})',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (app) {
+                                  if (app != null) {
+                                    setDialogState(() => selectedApp = app);
+                                  }
+                                },
+                              ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(FluentIcons.refresh),
+                        onPressed: () {
+                          setDialogState(() {
+                            isLoadingApps = true;
+                            hasStartedLoading = false;
+                            selectedApp = null;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        child: const Text('Add'),
+                        onPressed: selectedApp == null
+                            ? null
+                            : () async {
+                                await settings.addProductiveApp(
+                                  selectedApp!.processName,
+                                );
+                                setDialogState(() => selectedApp = null);
+                              },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+
+                  // Manual input fallback
+                  Text(
+                    'Or type exact process name manually:',
+                    style: FluentTheme.of(context).typography.caption,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextBox(
+                          controller: controller,
+                          placeholder: 'e.g., Code.exe',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        child: const Text('Add'),
+                        onPressed: () async {
+                          if (controller.text.isNotEmpty) {
+                            await settings.addProductiveApp(controller.text);
+                            controller.clear();
+                            setDialogState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Active List
+                  if (settings.productiveApps.isEmpty)
+                    const Text('No productive apps added yet.')
+                  else
+                    SizedBox(
+                      height: 150,
+                      child: ListView.builder(
+                        itemCount: settings.productiveApps.length,
+                        itemBuilder: (context, index) {
+                          final app = settings.productiveApps[index];
+                          return ListTile(
+                            title: Text(app),
+                            trailing: IconButton(
+                              icon: const Icon(FluentIcons.delete),
+                              onPressed: () async {
+                                await settings.removeProductiveApp(app);
+                                setDialogState(() {});
+                              },
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      child: const Text('Add'),
-                      onPressed: () async {
-                        if (controller.text.isNotEmpty) {
-                          await settings.addProductiveApp(controller.text);
-                          controller.clear();
-                          setDialogState(() {});
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (settings.productiveApps.isEmpty)
-                  const Text('No productive apps added yet.')
-                else
-                  SizedBox(
-                    height: 150,
-                    child: ListView.builder(
-                      itemCount: settings.productiveApps.length,
-                      itemBuilder: (context, index) {
-                        final app = settings.productiveApps[index];
-                        return ListTile(
-                          title: Text(app),
-                          trailing: IconButton(
-                            icon: const Icon(FluentIcons.delete),
-                            onPressed: () async {
-                              await settings.removeProductiveApp(app);
-                              setDialogState(() {});
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          actions: [
-            FilledButton(
-              child: const Text('Done'),
-              onPressed: () => Navigator.pop(dialogContext),
-            ),
-          ],
-        ),
+            actions: [
+              FilledButton(
+                child: const Text('Done'),
+                onPressed: () => Navigator.pop(dialogContext),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -626,16 +1071,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           Button(
             child: const Text('CSV'),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _showExportSuccessMessage(context, 'CSV');
+              final success = await DataSyncService().exportData(ExportFormat.csv);
+              if (success && context.mounted) {
+                _showExportSuccessMessage(context, 'CSV');
+              }
             },
           ),
           FilledButton(
             child: const Text('JSON'),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _showExportSuccessMessage(context, 'JSON');
+              final success = await DataSyncService().exportData(ExportFormat.json);
+              if (success && context.mounted) {
+                _showExportSuccessMessage(context, 'JSON');
+              }
             },
           ),
         ],
@@ -647,9 +1098,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await displayInfoBar(
       context,
       builder: (context, close) => InfoBar(
-        title: const Text('Export started'),
-        content: Text('Your data is being exported as $format...'),
-        severity: InfoBarSeverity.info,
+        title: const Text('Export Complete'),
+        content: Text('Your tracking backup data has been successfully exported as $format.'),
+        severity: InfoBarSeverity.success,
         onClose: close,
       ),
     );
@@ -671,8 +1122,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           FilledButton(
             child: const Text('Select File'),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
+              final success = await DataSyncService().importData();
+              if (success && context.mounted) {
+                await displayInfoBar(
+                  context,
+                  builder: (context, close) => InfoBar(
+                    title: const Text('Import Complete'),
+                    content: const Text('Your usage logs have been restored to the timeline.'),
+                    severity: InfoBarSeverity.success,
+                    onClose: close,
+                  ),
+                );
+              }
             },
           ),
         ],
@@ -705,32 +1168,129 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (result == true && mounted) {
-      // TODO: Actually clear the database
-      await displayInfoBar(
-        context,
-        builder: (context, close) => InfoBar(
-          title: const Text('Data cleared'),
-          content: const Text('All usage data has been deleted.'),
-          severity: InfoBarSeverity.warning,
-          onClose: close,
-        ),
-      );
+      // Actually clear the database
+      await DatabaseService.instance.clearAllUsage();
+      
+      if (mounted) {
+        await displayInfoBar(
+          context,
+          builder: (context, close) => InfoBar(
+            title: const Text('Data cleared'),
+            content: const Text('All usage data has been permanently deleted.'),
+            severity: InfoBarSeverity.warning,
+            onClose: close,
+          ),
+        );
+      }
     }
   }
 
   void _showUpdateCheckDialog(BuildContext context) async {
-    await displayInfoBar(
-      context,
-      builder: (context, close) => InfoBar(
-        title: const Text('You\'re up to date!'),
-        content: const Text('Screen Time v1.0.0 is the latest version.'),
-        severity: InfoBarSeverity.success,
-        onClose: close,
+    // 1. Show checking dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ContentDialog(
+        title: const Text('Checking for Updates'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            SizedBox(height: 16),
+            ProgressRing(),
+            SizedBox(height: 16),
+            Text('Contacting update server...'),
+          ],
+        ),
       ),
     );
+
+    try {
+      // 2. Perform real update check
+      final updateService = UpdateService();
+      final updateInfo = await updateService.checkForUpdates();
+
+      if (mounted) {
+        Navigator.pop(context); // Close checking dialog
+
+        if (updateInfo.isUpdateAvailable) {
+          // 3. Show Update Available Dialog
+          await showDialog(
+            context: context,
+            builder: (context) => ContentDialog(
+              title: const Text('Update Available'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('A new version (v${updateInfo.latestVersion}) is available.'),
+                  if (updateInfo.releaseNotes != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Release Notes:',
+                      style: FluentTheme.of(context).typography.bodyStrong,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      updateInfo.releaseNotes!,
+                      maxLines: 5,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                Button(
+                  child: const Text('Later'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                FilledButton(
+                  onPressed: updateInfo.downloadUrl == null
+                      ? null
+                      : () async {
+                          final url = Uri.parse(updateInfo.downloadUrl!);
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                          if (context.mounted) Navigator.pop(context);
+                        },
+                  child: const Text('Download & Install'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          // 4. Show "Up to date" InfoBar
+          await displayInfoBar(
+            context,
+            builder: (context, close) => InfoBar(
+              title: const Text('You\'re up to date!'),
+              content: const Text('Screen Time v1.0.0 is the latest version.'),
+              severity: InfoBarSeverity.success,
+              onClose: close,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close checking dialog
+        await displayInfoBar(
+          context,
+          builder: (context, close) => InfoBar(
+            title: const Text('Check Failed'),
+            content: Text('Could not reach the update server. Please check your internet connection.'),
+            severity: InfoBarSeverity.error,
+            onClose: close,
+          ),
+        );
+      }
+    }
   }
 
-  void _showResetSettingsDialog(BuildContext context, SettingsProvider settings) async {
+  void _showResetSettingsDialog(
+    BuildContext context,
+    SettingsProvider settings,
+  ) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => ContentDialog(
@@ -775,14 +1335,106 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              _ShortcutRow(shortcut: 'Ctrl + H', description: 'Go to Dashboard'),
-              _ShortcutRow(shortcut: 'Ctrl + S', description: 'Go to Statistics'),
+              _ShortcutRow(
+                shortcut: 'Ctrl + H',
+                description: 'Go to Dashboard',
+              ),
+              _ShortcutRow(
+                shortcut: 'Ctrl + S',
+                description: 'Go to Statistics',
+              ),
               _ShortcutRow(shortcut: 'Ctrl + ,', description: 'Open Settings'),
-              _ShortcutRow(shortcut: 'Ctrl + P', description: 'Pause/Resume tracking'),
+              _ShortcutRow(
+                shortcut: 'Ctrl + P',
+                description: 'Pause/Resume tracking',
+              ),
               _ShortcutRow(shortcut: 'Ctrl + R', description: 'Refresh data'),
-              _ShortcutRow(shortcut: 'Ctrl + Q', description: 'Quit application'),
+              _ShortcutRow(
+                shortcut: 'Ctrl + Q',
+                description: 'Quit application',
+              ),
             ],
           ),
+        ),
+        actions: [
+          FilledButton(
+            child: const Text('Close'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUPIDialog(BuildContext context) async {
+    const upiId = 'arifulislamkhan@upi';
+    const upiName = 'Ariful Islam Khan';
+    final upiUrl = 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(upiName)}&cu=INR';
+    final qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${Uri.encodeComponent(upiUrl)}';
+
+    await showDialog(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: const Text('Support via UPI'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Scan the QR code to support using any UPI app'),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Image.network(
+                qrUrl,
+                width: 200,
+                height: 200,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: Center(child: ProgressRing()),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: Center(
+                    child: Icon(FluentIcons.error_badge, color: Colors.red),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SelectableText(
+                  upiId,
+                  style: FluentTheme.of(context).typography.bodyStrong,
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(FluentIcons.copy, size: 14),
+                  onPressed: () {
+                    Clipboard.setData(const ClipboardData(text: upiId));
+                    displayInfoBar(
+                      context,
+                      builder: (context, close) => InfoBar(
+                        title: const Text('Copied'),
+                        content: const Text('UPI ID copied to clipboard'),
+                        severity: InfoBarSeverity.success,
+                        onClose: close,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
         ),
         actions: [
           FilledButton(
@@ -799,10 +1451,7 @@ class _ShortcutRow extends StatelessWidget {
   final String shortcut;
   final String description;
 
-  const _ShortcutRow({
-    required this.shortcut,
-    required this.description,
-  });
+  const _ShortcutRow({required this.shortcut, required this.description});
 
   @override
   Widget build(BuildContext context) {
@@ -865,19 +1514,13 @@ class _SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isLight 
-            ? const Color(0xFFF9F9F9)
-            : const Color(0xFF2D2D2D),
+        color: isLight ? const Color(0xFFF9F9F9) : const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isLight 
-              ? const Color(0xFFE5E5E5)
-              : const Color(0xFF3D3D3D),
+          color: isLight ? const Color(0xFFE5E5E5) : const Color(0xFF3D3D3D),
         ),
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 }
@@ -885,14 +1528,14 @@ class _SettingsCard extends StatelessWidget {
 class _SettingsRow extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final Widget child;
   final bool isLight;
 
   const _SettingsRow({
     required this.icon,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.child,
     required this.isLight,
   });
@@ -911,27 +1554,21 @@ class _SettingsRow extends StatelessWidget {
               color: theme.accentColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(
-              icon,
-              color: theme.accentColor,
-              size: 16,
-            ),
+            child: Icon(icon, color: theme.accentColor, size: 16),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: theme.typography.body,
-                ),
-                Text(
-                  subtitle,
-                  style: theme.typography.caption?.copyWith(
-                    color: isLight ? Colors.grey[130] : Colors.grey[100],
+                Text(title, style: theme.typography.body),
+                if (subtitle != null && subtitle!.isNotEmpty)
+                  Text(
+                    subtitle!,
+                    style: theme.typography.caption?.copyWith(
+                      color: isLight ? Colors.grey[130] : Colors.grey[100],
+                    ),
                   ),
-                ),
               ],
             ),
           ),

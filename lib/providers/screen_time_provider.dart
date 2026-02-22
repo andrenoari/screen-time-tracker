@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import '../models/app_usage.dart';
 import '../services/database_service.dart';
 import '../services/process_tracker_service.dart';
+import '../services/notification_service.dart';
+import '../models/app_block.dart';
 
 class ScreenTimeProvider extends ChangeNotifier {
   final DatabaseService _databaseService = DatabaseService.instance;
@@ -15,6 +17,7 @@ class ScreenTimeProvider extends ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
   int _selectedDays = 1; // 1 = today, 7 = week, 30 = month
   bool _isAscending = false;
+  int _dataRetentionDays = 30;
 
   // Usage data
   List<AppUsage> _todayUsage = [];
@@ -66,7 +69,10 @@ class ScreenTimeProvider extends ChangeNotifier {
         name.toLowerCase().contains(app.toLowerCase()));
   }
 
-  ScreenTimeProvider() {
+  ScreenTimeProvider({List<AppBlock>? initialBlockRules}) {
+    if (initialBlockRules != null) {
+      _processTracker.blockRules = initialBlockRules;
+    }
     _initialize();
   }
 
@@ -83,9 +89,24 @@ class ScreenTimeProvider extends ChangeNotifier {
       notifyListeners();
     };
 
+    _processTracker.onBreakReminderReached = (minutes) {
+      NotificationService().showBreakReminder(minutes);
+    };
+
+    _processTracker.onDailyGoalReached = (hours) {
+      NotificationService().showDailyGoalReached(hours);
+    };
+
+    _processTracker.onBlockedAppAttempt = (processName) {
+      NotificationService().showBlockedApp(processName);
+    };
+
     // Load initial data
     await loadTodayData();
     await loadDailyUsage();
+
+    // Auto-prune old data
+    await pruneOldData();
 
     // Auto-start tracking
     startTracking();
@@ -130,13 +151,62 @@ class ScreenTimeProvider extends ChangeNotifier {
     _processTracker.setTrackingInterval(seconds);
   }
 
+  void setIdleTimeout(int minutes) {
+    _processTracker.setIdleTimeout(minutes);
+  }
+
   void setIgnoredApps(List<String> apps) {
     _processTracker.customIgnoredApps = apps;
+  }
+
+  void configureNotifications({
+    required bool enableDailyGoal,
+    required int dailyGoalHours,
+    required bool enableBreakReminders,
+    required int breakReminderIntervalMinutes,
+  }) {
+    _processTracker.configureNotifications(
+      enableDailyGoal: enableDailyGoal,
+      dailyGoalHours: dailyGoalHours,
+      enableBreakReminders: enableBreakReminders,
+      breakReminderIntervalMinutes: breakReminderIntervalMinutes,
+    );
   }
 
   void setProductiveApps(List<String> apps) {
     _productiveApps = apps;
     notifyListeners();
+  }
+
+  void setPauseOnLock(bool value) {
+    _processTracker.setPauseOnLock(value);
+  }
+
+  void setBlockRules(List<AppBlock> rules) {
+    _processTracker.blockRules = rules;
+  }
+
+  void setShowNotifications(bool value) {
+    NotificationService().setEnabled(value);
+  }
+
+  Future<void> setDataRetentionDays(int days) async {
+    if (_dataRetentionDays == days) return;
+    _dataRetentionDays = days;
+    await pruneOldData();
+    notifyListeners();
+  }
+
+  Future<void> pruneOldData() async {
+    try {
+      final deletedCount = await _databaseService.deleteOldRecords(_dataRetentionDays);
+      if (deletedCount > 0) {
+        print('Pruned $deletedCount old records (Retention: $_dataRetentionDays days)');
+        await loadDailyUsage(); // Refresh chart if today's start might have changed (though unlikely to affect last 7 days unless retention is very low)
+      }
+    } catch (e) {
+      print('Error pruning old data: $e');
+    }
   }
 
   int get trackingInterval => _processTracker.trackingInterval;
@@ -200,6 +270,11 @@ class ScreenTimeProvider extends ChangeNotifier {
   Future<void> loadDailyUsage() async {
     _dailyUsage = await _databaseService.getDailyUsage(7);
     notifyListeners();
+  }
+
+  Future<void> refreshData() async {
+    await loadTodayData();
+    await loadDailyUsage();
   }
 
   void setSelectedDate(DateTime date) {

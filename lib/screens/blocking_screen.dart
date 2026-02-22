@@ -1,0 +1,230 @@
+import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:provider/provider.dart';
+import '../models/app_block.dart';
+import '../providers/settings_provider.dart';
+import '../providers/screen_time_provider.dart';
+
+class BlockingScreen extends StatefulWidget {
+  const BlockingScreen({super.key});
+
+  @override
+  State<BlockingScreen> createState() => _BlockingScreenState();
+}
+
+class _BlockingScreenState extends State<BlockingScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = FluentTheme.of(context);
+    final isLight = theme.brightness == Brightness.light;
+    final settings = context.watch<SettingsProvider>();
+
+    return ScaffoldPage(
+      header: PageHeader(
+        title: const Text('App Blocking'),
+        commandBar: CommandBar(
+          mainAxisAlignment: MainAxisAlignment.end,
+          primaryItems: [
+            CommandBarButton(
+              icon: const Icon(FluentIcons.add),
+              label: const Text('Add Block'),
+              onPressed: () => _showAddBlockDialog(context),
+            ),
+          ],
+        ),
+      ),
+      content: settings.blockRules.isEmpty
+          ? _buildEmptyState(theme)
+          : _buildBlockList(settings, theme, isLight),
+    );
+  }
+
+  Widget _buildEmptyState(FluentThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(FluentIcons.shield_alert, size: 64, color: theme.accentColor),
+          const SizedBox(height: 16),
+          Text(
+            'No apps blocked',
+            style: theme.typography.subtitle,
+          ),
+          const SizedBox(height: 8),
+          const Text('Add an app to limit usage or schedule blocks.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockList(SettingsProvider settings, FluentThemeData theme, bool isLight) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(24),
+      itemCount: settings.blockRules.length,
+      itemBuilder: (context, index) {
+        final rule = settings.blockRules[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: Icon(
+              FluentIcons.blocked2,
+              color: rule.isEnabled ? Colors.red : theme.typography.body?.color?.withOpacity(0.5),
+            ),
+            title: Text(rule.processName),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (rule.dailyLimitSeconds != null)
+                  Text('Daily Limit: ${rule.dailyLimitSeconds! ~/ 60} minutes'),
+                if (rule.blockStartMinutes != null && rule.blockEndMinutes != null)
+                  Text('Scheduled Block: ${_formatMinutes(rule.blockStartMinutes!)} - ${_formatMinutes(rule.blockEndMinutes!)}'),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ToggleSwitch(
+                  checked: rule.isEnabled,
+                  onChanged: (value) {
+                    settings.updateBlockRule(rule.copyWith(isEnabled: value));
+                    context.read<ScreenTimeProvider>().setBlockRules(settings.blockRules);
+                  },
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(FluentIcons.edit),
+                  onPressed: () => _showAddBlockDialog(context, existingRule: rule),
+                ),
+                IconButton(
+                  icon: const Icon(FluentIcons.delete),
+                  onPressed: () {
+                    settings.removeBlockRule(rule.processName);
+                    context.read<ScreenTimeProvider>().setBlockRules(settings.blockRules);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddBlockDialog(BuildContext context, {AppBlock? existingRule}) async {
+    final nameController = TextEditingController(text: existingRule?.processName);
+    int? limitMinutes = existingRule?.dailyLimitSeconds != null ? existingRule!.dailyLimitSeconds! ~/ 60 : null;
+    TimeOfDay? start = existingRule?.blockStartMinutes != null 
+        ? TimeOfDay(hour: existingRule!.blockStartMinutes! ~/ 60, minute: existingRule!.blockStartMinutes! % 60)
+        : null;
+    TimeOfDay? end = existingRule?.blockEndMinutes != null
+        ? TimeOfDay(hour: existingRule!.blockEndMinutes! ~/ 60, minute: existingRule!.blockEndMinutes! % 60)
+        : null;
+
+    await showDialog(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: Text(existingRule == null ? 'Add Block Rule' : 'Edit Block Rule'),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InfoLabel(
+                  label: 'App Process Name',
+                  child: TextBox(
+                    controller: nameController,
+                    placeholder: 'Process name (e.g., chrome)',
+                    enabled: existingRule == null,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expander(
+                  header: const Text('Daily Usage Limit'),
+                  content: Row(
+                    children: [
+                      const Text('Limit: '),
+                      const SizedBox(width: 8),
+                      NumberBox<int>(
+                        value: limitMinutes,
+                        onChanged: (v) => setDialogState(() => limitMinutes = v),
+                        placeholder: 'Minutes',
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('minutes'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expander(
+                  header: const Text('Scheduled Block'),
+                  content: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Text('Start: '),
+                          TimePicker(
+                            selected: DateTime(2022, 1, 1, start?.hour ?? 0, start?.minute ?? 0),
+                            onChanged: (v) => setDialogState(() => start = TimeOfDay.fromDateTime(v)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('End:  '),
+                          TimePicker(
+                            selected: DateTime(2022, 1, 1, end?.hour ?? 0, end?.minute ?? 0),
+                            onChanged: (v) => setDialogState(() => end = TimeOfDay.fromDateTime(v)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+        ),
+        actions: [
+          Button(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          FilledButton(
+            child: Text(existingRule == null ? 'Add' : 'Save'),
+            onPressed: () {
+              if (nameController.text.isEmpty) return;
+
+              final newRule = AppBlock(
+                processName: nameController.text.trim(),
+                dailyLimitSeconds: limitMinutes != null ? limitMinutes! * 60 : null,
+                blockStartMinutes: start != null ? start!.hour * 60 + start!.minute : null,
+                blockEndMinutes: end != null ? end!.hour * 60 + end!.minute : null,
+              );
+
+              final settings = context.read<SettingsProvider>();
+              if (existingRule == null) {
+                settings.addBlockRule(newRule);
+              } else {
+                settings.updateBlockRule(newRule);
+              }
+              
+              context.read<ScreenTimeProvider>().setBlockRules(settings.blockRules);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatMinutes(int minutes) {
+    final hour = minutes ~/ 60;
+    final minute = minutes % 60;
+    final ampm = hour >= 12 ? 'PM' : 'AM';
+    final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final m = minute.toString().padLeft(2, '0');
+    return '$h:$m $ampm';
+  }
+}

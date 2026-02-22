@@ -59,6 +59,13 @@ dependencies:
   # System Tray & Window
   system_tray: ^2.0.3
   window_manager: ^0.3.9
+  local_notifier: ^0.1.6
+  file_picker: ^10.3.10
+  csv: ^7.1.0
+  http: ^1.6.0
+  package_info_plus: ^9.0.0
+  url_launcher: ^6.3.2
+  uuid: ^3.0.6
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +73,13 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
   msix: ^3.16.8
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  windows:
+    generate: true
+    image_path: "assets/Screen Time Logo.png"
+    icon_size: 256
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -118,10 +132,5 @@ msix_config:
   capabilities: internetClient
   languages: en-us
   
-  # For store submission, set to false
-  # For sideloading/testing, set to true
-  store: false
-  
-  # Sign with self-signed certificate (for sideloading)
-  certificate_path: certificates\ScreenTimeTracker.pfx
-  certificate_password: 1QAZxsw@
+  # For store submission, set to true
+  store: true

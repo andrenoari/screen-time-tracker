@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../providers/screen_time_provider.dart';
+import '../providers/settings_provider.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -155,8 +156,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ],
               ),
               onPressed: () {
-                context.read<ScreenTimeProvider>().loadTodayData();
-                context.read<ScreenTimeProvider>().loadDailyUsage();
+                context.read<ScreenTimeProvider>().refreshData();
               },
             ),
           ],
@@ -527,8 +527,49 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildUsagePatternCard(FluentThemeData theme, bool isLight) {
-    return Container(
-      padding: const EdgeInsets.all(20),
+    return Consumer2<ScreenTimeProvider, SettingsProvider>(
+      builder: (context, provider, settings, child) {
+        // Calculate Insights dynamically
+        final String productiveTime;
+        final String totalTime;
+        final String focusSessions;
+        final String breakStatus;
+        Color? breakColor;
+
+        if (provider.totalSecondsToday == 0) {
+          productiveTime = 'No data yet';
+          totalTime = 'No data yet';
+          focusSessions = '0 sessions';
+          breakStatus = 'Start tracking!';
+          breakColor = Colors.grey[100];
+        } else {
+          // Calculate Productive Time String
+          double pScore = provider.focusScore;
+          if (pScore >= 80) productiveTime = 'Excellent focus';
+          else if (pScore >= 50) productiveTime = 'Good focus';
+          else productiveTime = 'Needs improvement';
+
+          // Calculate Total Time Insight String
+          int hours = provider.totalSecondsToday ~/ 3600;
+          if (hours > 8) totalTime = 'Very High (>8h)';
+          else if (hours > 4) totalTime = 'Moderate (4h-8h)';
+          else totalTime = 'Light (<4h)';
+
+          // Calculate focus sessions (matching dashboard focus score rule)
+          focusSessions = '${provider.focusScore.toStringAsFixed(0)}%';
+
+          // Break Status Insight
+          if (hours > 2 && pScore < 30) {
+            breakStatus = 'Take more breaks!';
+            breakColor = Colors.orange;
+          } else {
+            breakStatus = 'Good pacing';
+            breakColor = Colors.green;
+          }
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isLight
             ? const Color(0xFFF9F9F9)
@@ -558,37 +599,39 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _InsightRow(
-            icon: FluentIcons.sunny,
-            title: 'Most productive time',
-            value: 'Morning (9 AM - 12 PM)',
-            isLight: isLight,
-          ),
-          const SizedBox(height: 12),
-          _InsightRow(
-            icon: FluentIcons.clear_night,
-            title: 'Highest usage time',
-            value: 'Evening (6 PM - 9 PM)',
-            isLight: isLight,
-          ),
-          const SizedBox(height: 12),
-          _InsightRow(
-            icon: FluentIcons.completed,
-            title: 'Focus sessions today',
-            value: '3 sessions',
-            isLight: isLight,
-          ),
-          const SizedBox(height: 12),
-          _InsightRow(
-            icon: FluentIcons.warning,
-            title: 'Screen breaks',
-            value: 'Take more breaks!',
-            valueColor: Colors.orange,
-            isLight: isLight,
-          ),
-        ],
-      ),
-    );
+            _InsightRow(
+              icon: FluentIcons.sunny,
+              title: 'Productivity Level',
+              value: productiveTime,
+              isLight: isLight,
+            ),
+            const SizedBox(height: 12),
+            _InsightRow(
+              icon: FluentIcons.timer,
+              title: 'Daily Load',
+              value: totalTime,
+              isLight: isLight,
+            ),
+            const SizedBox(height: 12),
+            _InsightRow(
+              icon: FluentIcons.red_eye,
+              title: 'Focus Score',
+              value: focusSessions,
+              valueColor: Colors.green,
+              isLight: isLight,
+            ),
+            const SizedBox(height: 12),
+            _InsightRow(
+              icon: breakColor == Colors.orange ? FluentIcons.warning : FluentIcons.check_mark,
+              title: 'Screen Pacing',
+              value: breakStatus,
+              valueColor: breakColor,
+              isLight: isLight,
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildTrendsCard(FluentThemeData theme, bool isLight) {

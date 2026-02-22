@@ -10,12 +10,14 @@ A beautiful Windows desktop application to track your screen time and applicatio
 
 - 📊 **Real-time Tracking** - Monitors active applications automatically
 - 🎨 **Beautiful UI** - Windows 11 Fluent Design with Mica effect
+- 🌈 **Personalization** - Choose between Windows accent color or custom palettes
 - 📈 **Statistics** - Daily, weekly, and monthly usage analytics
 - 🥧 **Visual Charts** - Pie charts and bar graphs for usage breakdown
 - ⚙️ **Customizable** - Idle timeout, tracking precision, ignored apps
 - 🔒 **Privacy** - Blur app names, pause on screen lock
 - 🎯 **Goals** - Set daily screen time limits
 - ☕ **Break Reminders** - Get reminded to take breaks
+- 🔄 **Update Check** - Real-time checks for new versions via GitHub API
 
 ## Screenshots
 

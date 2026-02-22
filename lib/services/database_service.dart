@@ -117,6 +117,18 @@ class DatabaseService {
     return results.map((map) => AppUsage.fromMap(map)).toList();
   }
 
+  /// Get all recorded usage from the database
+  Future<List<AppUsage>> getAllUsage() async {
+    final db = await database;
+
+    final results = await db.query(
+      'app_usage',
+      orderBy: 'date DESC, usage_seconds DESC',
+    );
+
+    return results.map((map) => AppUsage.fromMap(map)).toList();
+  }
+
   /// Get usage for date range
   Future<List<AppUsage>> getUsageForDateRange(DateTime start, DateTime end) async {
     final db = await database;
@@ -213,10 +225,31 @@ class DatabaseService {
     );
   }
 
+  /// Clear all usage records from the database
+  Future<void> clearAllUsage() async {
+    final db = await database;
+    await db.delete('app_usage');
+  }
+
   /// Close the database
   Future<void> close() async {
     final db = await database;
     await db.close();
     _database = null;
+  }
+
+  /// Get usage for a specific process on a specific date
+  Future<AppUsage?> getAppUsageForProcess(String processName, DateTime date) async {
+    final db = await database;
+    final dateStr = date.toIso8601String().split('T')[0];
+
+    final results = await db.query(
+      'app_usage',
+      where: 'process_name = ? AND date = ?',
+      whereArgs: [processName, dateStr],
+    );
+
+    if (results.isEmpty) return null;
+    return AppUsage.fromMap(results.first);
   }
 }

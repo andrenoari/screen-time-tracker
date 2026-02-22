@@ -3,7 +3,9 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 import '../models/app_usage.dart';
+import '../models/app_block.dart';
 import 'database_service.dart';
+import 'block_service.dart';
 
 /// Service to track the currently active window/process on Windows
 class ProcessTrackerService {
@@ -11,16 +13,34 @@ class ProcessTrackerService {
   String? _currentProcessName;
   DateTime? _currentProcessStartTime;
   int _trackingIntervalSeconds = 1;
+  int _idleTimeoutMinutes = 5;
+  
+  // Notification fields
+  bool _enableDailyGoal = false;
+  int _dailyGoalHours = 4;
+  bool _enableBreakReminders = false;
+  int _breakReminderIntervalMinutes = 60;
+  
+  int _continuousActiveSeconds = 0;
+  bool _dailyGoalTriggered = false;
+
+  bool _pauseOnLock = true;
   bool _isTracking = false;
 
   // Custom ignored apps from user settings
   List<String> customIgnoredApps = [];
+
+  // Blocking Rules
+  List<AppBlock> blockRules = [];
 
   final DatabaseService _databaseService = DatabaseService.instance;
 
   // Callbacks
   Function(String processName, String windowTitle)? onActiveWindowChanged;
   Function(int totalSecondsToday)? onTotalTimeUpdated;
+  Function(int breakMinutes)? onBreakReminderReached;
+  Function(int goalHours)? onDailyGoalReached;
+  Function(String processName)? onBlockedAppAttempt;
 
   bool get isTracking => _isTracking;
   int get trackingInterval => _trackingIntervalSeconds;
@@ -127,6 +147,25 @@ class ProcessTrackerService {
     return false;
   }
 
+  /// Get system idle time in seconds
+  int _getIdleTimeSeconds() {
+    try {
+      final lastInputInfo = calloc<LASTINPUTINFO>();
+      lastInputInfo.ref.cbSize = sizeOf<LASTINPUTINFO>();
+
+      if (GetLastInputInfo(lastInputInfo) != 0) {
+        final tickCount = GetTickCount();
+        final idleMilliseconds = tickCount - lastInputInfo.ref.dwTime;
+        free(lastInputInfo);
+        return idleMilliseconds ~/ 1000;
+      }
+      free(lastInputInfo);
+    } catch (e) {
+      print('Error getting idle time: $e');
+    }
+    return 0; // Assume not idle on error
+  }
+
   /// Start tracking active windows
   void startTracking() {
     if (_isTracking) return;
@@ -152,8 +191,35 @@ class ProcessTrackerService {
   }
 
   void _trackActiveWindow() async {
+    // Check for user activity early to avoid recording blank usage
+    if (_idleTimeoutMinutes > 0) {
+      final idleSeconds = _getIdleTimeSeconds();
+      if (idleSeconds >= _idleTimeoutMinutes * 60) {
+        // User is idle. We should pause tracking for this interval.
+        // Also close out any existing session so we don't skew the last active time
+        await _saveCurrentSession();
+        _continuousActiveSeconds = 0; // Reset consecutive break timer
+        return;
+      }
+    }
+
+    final hwnd = GetForegroundWindow();
+    if (_pauseOnLock && hwnd == 0) {
+      // If foreground window is 0 (Desktop or Lock Screen in some states) and pauseOnLock is on
+      await _saveCurrentSession();
+      _continuousActiveSeconds = 0;
+      return;
+    }
+
     final windowInfo = getForegroundWindowInfo();
     if (windowInfo == null) return;
+
+    // --- Blocking Check ---
+    if (await _shouldBlockProcess(windowInfo.processName)) {
+      await BlockService.blockProcess(windowInfo.processName);
+      onBlockedAppAttempt?.call(windowInfo.processName);
+      return; 
+    }
 
     final now = DateTime.now();
 
@@ -190,6 +256,25 @@ class ProcessTrackerService {
         DateTime(now.year, now.month, now.day),
       );
       onTotalTimeUpdated?.call(totalToday);
+
+      // --- Notifications Logic ---
+      _continuousActiveSeconds += _trackingIntervalSeconds;
+      
+      // 1. Break Reminders
+      if (_enableBreakReminders && _breakReminderIntervalMinutes > 0) {
+        if (_continuousActiveSeconds >= _breakReminderIntervalMinutes * 60) {
+          onBreakReminderReached?.call(_breakReminderIntervalMinutes);
+          _continuousActiveSeconds = 0; // Reset consecutive active timer
+        }
+      }
+
+      // 2. Daily Goal
+      if (_enableDailyGoal && _dailyGoalHours > 0 && !_dailyGoalTriggered) {
+        if (totalToday >= _dailyGoalHours * 3600) {
+          onDailyGoalReached?.call(_dailyGoalHours);
+          _dailyGoalTriggered = true; // Only trigger once per day
+        }
+      }
     }
   }
 
@@ -208,6 +293,67 @@ class ProcessTrackerService {
       stopTracking();
       startTracking();
     }
+  }
+
+  /// Set idle timeout in minutes
+  void setIdleTimeout(int minutes) {
+    _idleTimeoutMinutes = minutes;
+  }
+
+  void setPauseOnLock(bool value) {
+    _pauseOnLock = value;
+  }
+
+  Future<bool> _shouldBlockProcess(String processName) async {
+    final now = DateTime.now();
+    final timeNowMin = now.hour * 60 + now.minute;
+
+    for (final rule in blockRules) {
+      if (!rule.isEnabled) continue;
+      
+      if (processName.toLowerCase().contains(rule.processName.toLowerCase())) {
+        // 1. Check Schedule Block
+        if (rule.blockStartMinutes != null && rule.blockEndMinutes != null) {
+          if (_isTimeBetween(timeNowMin, rule.blockStartMinutes!, rule.blockEndMinutes!)) {
+            return true;
+          }
+        }
+
+        // 2. Check Daily Limit
+        if (rule.dailyLimitSeconds != null) {
+          final usageToday = await _databaseService.getAppUsageForProcess(
+            rule.processName,
+            DateTime(now.year, now.month, now.day),
+          );
+          
+          if (usageToday != null && usageToday.usageSeconds >= rule.dailyLimitSeconds!) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _isTimeBetween(int nowMin, int startMin, int endMin) {
+    if (startMin <= endMin) {
+      return nowMin >= startMin && nowMin <= endMin;
+    } else {
+      // Overnight block (e.g., 22:00 to 06:00)
+      return nowMin >= startMin || nowMin <= endMin;
+    }
+  }
+
+  void configureNotifications({
+    required bool enableDailyGoal,
+    required int dailyGoalHours,
+    required bool enableBreakReminders,
+    required int breakReminderIntervalMinutes,
+  }) {
+    _enableDailyGoal = enableDailyGoal;
+    _dailyGoalHours = dailyGoalHours;
+    _enableBreakReminders = enableBreakReminders;
+    _breakReminderIntervalMinutes = breakReminderIntervalMinutes;
   }
 
   void dispose() {

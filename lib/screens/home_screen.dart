@@ -126,7 +126,26 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        _buildTimePeriodSelector(context, theme, isLight),
+        Row(
+          children: [
+            _buildTimePeriodSelector(context, theme, isLight),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Refresh data (Ctrl+R)',
+              child: FilledButton(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(FluentIcons.refresh, size: 14),
+                    SizedBox(width: 8),
+                    Text('Refresh'),
+                  ],
+                ),
+                onPressed: () => context.read<ScreenTimeProvider>().refreshData(),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -578,10 +597,13 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 20),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _buildLegend(provider, theme, isLight, blur: settings.blurAppNames),
+                        child: ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: _buildLegend(provider, theme, isLight, blur: settings.blurAppNames),
+                            ),
                           ),
                         ),
                       ),
@@ -686,12 +708,27 @@ class HomeScreen extends StatelessWidget {
   Widget _buildTopAppsCard(BuildContext context, FluentThemeData theme, bool isLight) {
     return Consumer2<ScreenTimeProvider, SettingsProvider>(
       builder: (context, provider, settings, child) {
-        // Sync settings with provider
-        provider.setIgnoredApps(settings.ignoredApps);
-        provider.setProductiveApps(settings.productiveApps);
-        if (provider.trackingInterval != settings.trackingInterval) {
-          provider.setTrackingInterval(settings.trackingInterval);
-        }
+        // Sync settings with provider post-frame to avoid setState during build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          provider.setIgnoredApps(settings.ignoredApps);
+          provider.setProductiveApps(settings.productiveApps);
+          provider.setIdleTimeout(settings.idleTimeout);
+          
+          provider.configureNotifications(
+            enableDailyGoal: settings.enableDailyGoal,
+            dailyGoalHours: settings.dailyGoalHours,
+            enableBreakReminders: settings.enableBreakReminders,
+            breakReminderIntervalMinutes: settings.breakReminderInterval,
+          );
+
+          provider.setPauseOnLock(settings.pauseOnLock);
+          provider.setShowNotifications(settings.showNotifications);
+          provider.setDataRetentionDays(settings.dataRetentionDays);
+
+          if (provider.trackingInterval != settings.trackingInterval) {
+            provider.setTrackingInterval(settings.trackingInterval);
+          }
+        });
         
         return Container(
           padding: const EdgeInsets.all(20),
