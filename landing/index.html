@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Time Tracker - Master Your Digital Life</title>
+    <meta name="description"
+        content="A beautiful, native Windows app to track your screen time, improve productivity, and regain control of your digital habits.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="../assets/Screen Time Logo.png">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <img src="../assets/Screen Time Logo.png" alt="Screen Time Tracker Logo">
+                <span>Screen Time</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#showcase">Showcase</a></li>
+                <li><a href="privacy.html">Privacy</a></li>
+                <li><a href="#" class="btn btn-primary btn-sm">Download</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="badge">Version 1.0.5 Now Available</div>
+                <h1>Master Your <span class="text-gradient">Digital Life</span></h1>
+                <p>The ultimate screen time companion for Windows. Experience the power of Fluent Design on your desktop
+                    while gaining deep insights into your digital habits.</p>
+                <div class="hero-actions">
+                    <a href="https://github.com/andrenoari/screen-time-tracker/releases/latest/download/screen_time_tracker.msix"
+                        class="btn btn-primary btn-lg">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download for Windows (.msix)
+                    </a>
+                    <a href="#showcase" class="btn btn-outline btn-lg">See it in action</a>
+                </div>
+                <div class="hero-meta">
+                    <span><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path
+                                d="M7 11.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z" />
+                            <path
+                                d="M12 7.376V1c0-.552-.448-1-1-1S10 .448 10 1v1h-1V1c0-.552-.448-1-1-1S7 .448 7 1v1H6V1c0-.552-.448-1-1-1S4 .448 4 1v6.376c-.618.456-1 1.183-1 2.015 0 1.301.821 2.378 2 2.79V13.5c0 .828.672 1.5 1.5 1.5h3c.828 0 1.5-.672 1.5-1.5v-1.319c1.179-.412 2-1.489 2-2.79 0-.832-.382-1.559-1-2.015zM8 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1zM6 8a1 1 0 1 1 2 0 1 1 0 0 1-2 0zm3 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0z" />
+                        </svg> Optimized for Windows 11</span>
+                    <span><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path
+                                d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                        </svg> 100% Private</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-bg-glow"></div>
+    </header>
+
+    <section id="showcase" class="showcase">
+        <div class="container">
+            <div class="mockup-container" id="main-mockup">
+                <img src="../assets/screenshot.png" alt="Screen Time Tracker Dashboard" class="main-screenshot">
+                <div class="mockup-reflection"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Designed for <span class="text-gradient">Performance</span></h2>
+                <p>Powerful tools to help you understand where your time goes.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Real-time Tracking</h3>
+                    <p>Automated monitoring of active applications with precision. No manual logging required.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <h3>Deep Analytics</h3>
+                    <p>Visual charts and trends to help you identify patterns in your digital behavior.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Privacy First</h3>
+                    <p>Your data stays on your device. We use a local SQLite database for maximum security.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Daily Goals</h3>
+                    <p>Set custom limits for applications and categories to help you stay within your targets.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-content">
+                <div class="stat-item">
+                    <span class="stat-number">2h+</span>
+                    <span class="stat-label">Daily Time Saved</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">Data Privacy</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">0.1s</span>
+                    <span class="stat-label">Tracking Precision</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="privacy" class="privacy-banner">
+        <div class="container">
+            <div class="privacy-content">
+                <div class="privacy-icon">🔒</div>
+                <div class="privacy-text">
+                    <h3>Your Privacy is Our Priority</h3>
+                    <p>Screen Time Tracker never uploads your data to the cloud. All information is stored in a local,
+                        encrypted database right on your PC. You are in full control.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-final">
+        <div class="container text-center">
+            <h2>Ready to transform your productivity?</h2>
+            <p>Join thousands of users who are taking back control of their time.</p>
+            <a href="https://github.com/andrenoari/screen-time-tracker/releases/latest/download/screen_time_tracker.msix"
+                class="btn btn-primary btn-lg">Download for Windows (.msix)</a>
+            <p class="small mt-2">Compatible with Windows 10 & 11</p>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <img src="../assets/Screen Time Logo.png" alt="Logo">
+                        <span>Screen Time</span>
+                    </div>
+                    <p>Empowering you to live a more balanced digital life.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#showcase">Showcase</a></li>
+                        <li><a href="#">Releases</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#">Support</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="https://github.com/andrenoari/screen-time-tracker">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Screen Time Tracker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

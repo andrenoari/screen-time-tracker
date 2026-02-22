@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Screen Time Tracker</title>
+    <meta name="description"
+        content="Privacy Policy for Screen Time Tracker. Learn how we protect your data and why your privacy is our priority.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="../assets/Screen Time Logo.png">
+    <style>
+        .policy-container {
+            max-width: 800px;
+            margin: 120px auto 80px;
+            padding: 0 2rem;
+        }
+
+        .policy-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .policy-content h2 {
+            font-size: 1.5rem;
+            margin: 2rem 0 1rem;
+            color: var(--text-dark);
+        }
+
+        .policy-content p {
+            margin-bottom: 1.5rem;
+            color: var(--text-gray);
+        }
+
+        .policy-content ul {
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+            color: var(--text-gray);
+        }
+
+        .policy-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .last-updated {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 3rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo" style="text-decoration: none;">
+                <img src="../assets/Screen Time Logo.png" alt="Screen Time Tracker Logo">
+                <span>Screen Time</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#showcase">Showcase</a></li>
+                <li><a href="index.html" class="btn btn-primary btn-sm">Back to Home</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="policy-container">
+        <div class="policy-content">
+            <h1>Privacy Policy</h1>
+            <p class="last-updated">Last Updated: February 22, 2026</p>
+
+            <p>At Screen Time Tracker, your privacy is our top priority. As a local-native application designed for
+                Windows, we ensure your data stays where it belongs: on your computer.</p>
+
+            <h2>1. Local-Only Storage</h2>
+            <p>The core principle of Screen Time Tracker is that <strong>your usage data stays local</strong>. All
+                tracking information, including application usage statistics, window titles, and productivity goals, are
+                stored exclusively in a local SQLite database on your device. We do not have servers to store your
+                personal usage history.</p>
+
+            <h2>2. Information We Process</h2>
+            <p>To provide tracking features, the application monitors:</p>
+            <ul>
+                <li><strong>Process Names:</strong> To identify which applications you are using.</li>
+                <li><strong>Window Titles:</strong> To provide granularity within apps (e.g., specific document names or
+                    website titles).</li>
+                <li><strong>Executable Paths:</strong> To accurately categorize and iconify tracked applications.</li>
+            </ul>
+            <p>This information is processed in real-time and saved directly to your local database. It is never
+                uploaded to any remote server.</p>
+
+            <h2>3. Anonymous Analytics</h2>
+            <p>We use **Mixpanel** to collect anonymous usage events to help us improve the application. This helps us
+                understand which features are most popular and identify potential performance issues. The data collected
+                includes:</p>
+            <ul>
+                <li>App launch events.</li>
+                <li>Feature usage (e.g., "Export Clicked").</li>
+                <li>System platform version.</li>
+            </ul>
+            <p><strong>Importantly:</strong> We never send your screen time data, process names, or window titles to
+                Mixpanel. Every installation is assigned a random, anonymous UUID to protect your identity.</p>
+
+            <h2>4. Third-Party Services</h2>
+            <ul>
+                <li><strong>GitHub API:</strong> The application may periodically check for new versions via GitHub. No
+                    personal data is transmitted during this check.</li>
+                <li><strong>Local Export/Import:</strong> The "Data Sync" feature is strictly for manual backups.
+                    Exporting generates a local JSON or CSV file on your disk; importing reads from those local files.
+                    No data is synced to the cloud.</li>
+            </ul>
+
+            <h2>5. Your Controls</h2>
+            <p>You are in full control of your digital footprint:</p>
+            <ul>
+                <li><strong>Pause Tracking:</strong> Instantly stop all monitoring from the dashboard or system tray.
+                </li>
+                <li><strong>Privacy Mode:</strong> Enable "Blur App Names" in settings to hide sensitive data in the UI.
+                </li>
+                <li><strong>Data Management:</strong> You can export your data for your own records or permanently
+                    delete your entire history from the Settings menu.</li>
+            </ul>
+
+            <h2>6. Contact Us</h2>
+            <p>If you have questions about our data practices or wish to review the source code, please visit our <a
+                    href="https://github.com/andrenoari/screen-time-tracker">GitHub repository</a>.</p>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <img src="../assets/Screen Time Logo.png" alt="Logo">
+                        <span>Screen Time</span>
+                    </div>
+                    <p>Empowering you to live a more balanced digital life.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="index.html#features">Features</a></li>
+                        <li><a href="index.html#showcase">Showcase</a></li>
+                        <li><a href="https://github.com/andrenoari/screen-time-tracker/releases">Releases</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://github.com/andrenoari/screen-time-tracker">GitHub</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Screen Time Tracker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
