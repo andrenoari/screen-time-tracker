@@ -26,17 +26,12 @@ class WindowEffectManager {
     currentEffect = effect;
     isDark = dark;
     
-    // Color is important for the effect to show properly
-    // For Mica/Acrylic on Windows, use a semi-transparent color
     Color effectColor;
     if (effect == acrylic.WindowEffect.solid || effect == acrylic.WindowEffect.disabled) {
-      // Solid/Disabled needs an opaque color
       effectColor = dark ? const Color(0xFF1F1F1F) : const Color(0xFFF3F3F3);
     } else if (effect == acrylic.WindowEffect.acrylic) {
-      // Acrylic needs a semi-transparent color for the tint
       effectColor = dark ? const Color(0xCC222222) : const Color(0x22DDDDDD);
     } else {
-      // Mica/Tabbed work best with transparent
       effectColor = Colors.transparent;
     }
     
@@ -78,8 +73,23 @@ class QuitIntent extends Intent {
   const QuitIntent();
 }
 
+// Keep a global reference so the lock file isn't released while the app runs
+RandomAccessFile? _lockFile;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Single-instance enforcement using a lock file
+  if (Platform.isWindows) {
+    try {
+      final lockPath = '${Platform.environment['LOCALAPPDATA']}\\ScreenTimeTracker.lock';
+      _lockFile = File(lockPath).openSync(mode: FileMode.write);
+      _lockFile!.lockSync(FileLock.exclusive);
+    } catch (e) {
+      // Lock failed — another instance is running
+      exit(0);
+    }
+  }
 
   // Initialize analytics
   await AnalyticsService().initialize();

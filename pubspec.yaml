@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.5+5
+version: 1.0.6+6
 
 environment:
   sdk: ^3.10.1
@@ -123,11 +123,11 @@ flutter:
 
 # MSIX Configuration for Windows Store / Sideloading
 msix_config:
-  display_name: Screen Time Tracker
-  publisher_display_name: Freak Media
-  identity_name: com.freakmedia.screentime
-  publisher: CN=Ariful Islam Khan, O=Freak Media, C=IN
-  msix_version: 1.0.5.0
+  display_name: Screen Time - Digital Wellbeing
+  publisher_display_name: Ariful Islam Khan
+  identity_name: ArifulIslamKhan.ScreenTime-DigitalWellbeing
+  publisher: CN=3E7AC579-1AB0-453F-8094-B30306C005EC
+  msix_version: 1.0.6.0
   logo_path: windows\runner\resources\app_icon.ico
   capabilities: internetClient
   languages: en-us

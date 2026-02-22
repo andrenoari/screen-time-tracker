@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/app_block.dart';
 import '../providers/settings_provider.dart';
 import '../providers/screen_time_provider.dart';
+import '../widgets/app_icon_widget.dart';
 
 class BlockingScreen extends StatefulWidget {
   const BlockingScreen({super.key});
@@ -66,9 +67,10 @@ class _BlockingScreenState extends State<BlockingScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: Icon(
-              FluentIcons.blocked2,
-              color: rule.isEnabled ? Colors.red : theme.typography.body?.color?.withOpacity(0.5),
+            leading: AppIconWidget(
+              processName: rule.processName,
+              size: 24,
+              fallbackIcon: FluentIcons.blocked2,
             ),
             title: Text(rule.processName),
             subtitle: Column(
@@ -145,10 +147,13 @@ class _BlockingScreenState extends State<BlockingScreen> {
                     children: [
                       const Text('Limit: '),
                       const SizedBox(width: 8),
-                      NumberBox<int>(
-                        value: limitMinutes,
-                        onChanged: (v) => setDialogState(() => limitMinutes = v),
-                        placeholder: 'Minutes',
+                      SizedBox(
+                        width: 120,
+                        child: NumberBox<int>(
+                          value: limitMinutes,
+                          onChanged: (v) => setDialogState(() => limitMinutes = v),
+                          placeholder: 'Minutes',
+                        ),
                       ),
                       const SizedBox(width: 8),
                       const Text('minutes'),
@@ -162,20 +167,24 @@ class _BlockingScreenState extends State<BlockingScreen> {
                     children: [
                       Row(
                         children: [
-                          const Text('Start: '),
-                          TimePicker(
-                            selected: DateTime(2022, 1, 1, start?.hour ?? 0, start?.minute ?? 0),
-                            onChanged: (v) => setDialogState(() => start = TimeOfDay.fromDateTime(v)),
+                          const SizedBox(width: 40, child: Text('Start: ')),
+                          Expanded(
+                            child: TimePicker(
+                              selected: DateTime(2022, 1, 1, start?.hour ?? 0, start?.minute ?? 0),
+                              onChanged: (v) => setDialogState(() => start = TimeOfDay.fromDateTime(v)),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Text('End:  '),
-                          TimePicker(
-                            selected: DateTime(2022, 1, 1, end?.hour ?? 0, end?.minute ?? 0),
-                            onChanged: (v) => setDialogState(() => end = TimeOfDay.fromDateTime(v)),
+                          const SizedBox(width: 40, child: Text('End: ')),
+                          Expanded(
+                            child: TimePicker(
+                              selected: DateTime(2022, 1, 1, end?.hour ?? 0, end?.minute ?? 0),
+                              onChanged: (v) => setDialogState(() => end = TimeOfDay.fromDateTime(v)),
+                            ),
                           ),
                         ],
                       ),

@@ -10,6 +10,7 @@ import '../services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/services.dart';
+import '../widgets/app_icon_widget.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -858,6 +859,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         itemBuilder: (context, index) {
                           final app = settings.ignoredApps[index];
                           return ListTile(
+                            leading: AppIconWidget(
+                              processName: app,
+                              size: 20,
+                            ),
                             title: Text(app),
                             trailing: IconButton(
                               icon: const Icon(FluentIcons.delete),
@@ -1029,6 +1034,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         itemBuilder: (context, index) {
                           final app = settings.productiveApps[index];
                           return ListTile(
+                            leading: AppIconWidget(
+                              processName: app,
+                              size: 20,
+                              fallbackIcon: FluentIcons.favorite_star,
+                            ),
                             title: Text(app),
                             trailing: IconButton(
                               icon: const Icon(FluentIcons.delete),

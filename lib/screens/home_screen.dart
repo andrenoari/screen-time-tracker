@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui';
+import 'package:flutter/gestures.dart';
 import '../providers/screen_time_provider.dart';
 import '../providers/settings_provider.dart';
 
@@ -505,204 +506,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildUsageChart(BuildContext context, FluentThemeData theme, bool isLight) {
-    return Consumer2<ScreenTimeProvider, SettingsProvider>(
-      builder: (context, provider, settings, child) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isLight
-                ? const Color(0xFFF9F9F9)
-                : const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isLight
-                  ? const Color(0xFFE5E5E5)
-                  : const Color(0xFF3D3D3D),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Usage Distribution',
-                    style: theme.typography.bodyStrong,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.accentColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${provider.aggregatedUsage.length} apps',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: theme.accentColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              if (provider.aggregatedUsage.isEmpty)
-                SizedBox(
-                  height: 200,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          FluentIcons.chart,
-                          size: 40,
-                          color: isLight ? Colors.grey[90] : Colors.grey[100],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No data available',
-                          style: theme.typography.body?.copyWith(
-                            color: isLight ? Colors.grey[130] : Colors.grey[100],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Start tracking to see your usage',
-                          style: theme.typography.caption?.copyWith(
-                            color: isLight ? Colors.grey[100] : Colors.grey[120],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                SizedBox(
-                  height: 200,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: PieChart(
-                          PieChartData(
-                            sectionsSpace: 2,
-                            centerSpaceRadius: 45,
-                            sections: _buildPieSections(provider, theme),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: ScrollConfiguration(
-                          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: _buildLegend(provider, theme, isLight, blur: settings.blurAppNames),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  List<PieChartSectionData> _buildPieSections(ScreenTimeProvider provider, FluentThemeData theme) {
-    final colors = [
-      theme.accentColor,
-      Colors.teal,
-      Colors.green,
-      Colors.orange,
-      Colors.magenta,
-      Colors.purple,
-      Colors.red,
-    ];
-
-    return provider.aggregatedUsage
-        .toList()
-        .asMap()
-        .entries
-        .map((entry) {
-      final index = entry.key;
-      final app = entry.value;
-      return PieChartSectionData(
-        color: colors[index % colors.length],
-        value: app.totalSeconds.toDouble(),
-        title: '${app.percentage.toStringAsFixed(0)}%',
-        radius: 40,
-        titleStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildLegend(ScreenTimeProvider provider, FluentThemeData theme, bool isLight, {bool blur = false}) {
-    final colors = [
-      theme.accentColor,
-      Colors.teal,
-      Colors.green,
-      Colors.orange,
-      Colors.magenta,
-      Colors.purple,
-      Colors.red,
-    ];
-
-    return provider.aggregatedUsage
-        .toList()
-        .asMap()
-        .entries
-        .map((entry) {
-      final index = entry.key;
-      final app = entry.value;
-      final displayName = blur 
-          ? _obscureAppName(app.displayName, true) 
-          : app.displayName;
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: colors[index % colors.length],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                displayName,
-                style: theme.typography.caption?.copyWith(
-                  color: isLight ? Colors.grey[130] : Colors.grey[100],
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Text(
-              app.formattedTime,
-              style: theme.typography.caption?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }).toList();
+    return _UsageChartCard(isLight: isLight);
   }
 
   Widget _buildTopAppsCard(BuildContext context, FluentThemeData theme, bool isLight) {
@@ -1297,3 +1101,429 @@ class _CompactTrendRow extends StatelessWidget {
   }
 }
 
+
+// ─── Enhanced Usage Chart ───────────────────────────────────────────────────
+
+class _UsageChartCard extends StatefulWidget {
+  final bool isLight;
+
+  const _UsageChartCard({required this.isLight});
+
+  @override
+  State<_UsageChartCard> createState() => _UsageChartCardState();
+}
+
+class _UsageChartCardState extends State<_UsageChartCard> {
+  int _touchedIndex = -1;
+
+  static const _chartColors = <Color>[
+    Color(0xFF0078D4), // Blue
+    Color(0xFF00B7C3), // Teal
+    Color(0xFF107C10), // Green
+    Color(0xFFFF8C00), // Amber
+    Color(0xFFE81123), // Red
+    Color(0xFFB4009E), // Magenta
+    Color(0xFF5C2D91), // Purple
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FluentTheme.of(context);
+    final isLight = widget.isLight;
+
+    return Consumer2<ScreenTimeProvider, SettingsProvider>(
+      builder: (context, provider, settings, child) {
+        final usage = provider.aggregatedUsage;
+        final displayUsage = _getDisplayUsage(usage);
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isLight
+                ? const Color(0xFFF9F9F9)
+                : const Color(0xFF2D2D2D),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isLight
+                  ? const Color(0xFFE5E5E5)
+                  : const Color(0xFF3D3D3D),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Usage Distribution',
+                    style: theme.typography.bodyStrong,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.accentColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${displayUsage.length} apps',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.accentColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Chart content
+              if (displayUsage.isEmpty)
+                _buildEmptyState(theme, isLight)
+              else
+                SizedBox(
+                  height: 200,
+                  child: Row(
+                    children: [
+                      // Donut chart with center widget
+                      Expanded(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            PieChart(
+                              PieChartData(
+                                pieTouchData: PieTouchData(
+                                  touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                    setState(() {
+                                      if (!event.isInterestedForInteractions ||
+                                          pieTouchResponse == null ||
+                                          pieTouchResponse.touchedSection == null) {
+                                        _touchedIndex = -1;
+                                        return;
+                                      }
+                                      _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                    });
+                                  },
+                                ),
+                                borderData: FlBorderData(show: false),
+                                sectionsSpace: 2,
+                                centerSpaceRadius: 45,
+                                sections: _buildSections(displayUsage, theme),
+                              ),
+                              swapAnimationDuration: const Duration(milliseconds: 400),
+                              swapAnimationCurve: Curves.easeInOut,
+                            ),
+                            // Center display
+                            _buildCenterDisplay(displayUsage, provider, theme, isLight),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      // Legend — absorbs scroll so page doesn't scroll
+                      Expanded(
+                        child: Listener(
+                          onPointerSignal: (event) {
+                            if (event is PointerScrollEvent) {
+                              GestureBinding.instance.pointerSignalResolver.register(
+                                event, (event) {},
+                              );
+                            }
+                          },
+                          child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: _buildLegendItems(
+                                  displayUsage, theme, isLight,
+                                  blur: settings.blurAppNames,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Groups apps with <90 seconds into a single "Others" entry.
+  List<_DisplayApp> _getDisplayUsage(List<dynamic> usage) {
+    final mainApps = <_DisplayApp>[];
+    int othersSeconds = 0;
+    int totalSeconds = 0;
+
+    for (final app in usage) {
+      totalSeconds += app.totalSeconds as int;
+      if (app.totalSeconds >= 90) {
+        mainApps.add(_DisplayApp(
+          displayName: app.displayName,
+          totalSeconds: app.totalSeconds,
+          percentage: app.percentage,
+          formattedTime: app.formattedTime,
+        ));
+      } else {
+        othersSeconds += app.totalSeconds as int;
+      }
+    }
+
+    if (othersSeconds > 0 && totalSeconds > 0) {
+      final othersPct = (othersSeconds / totalSeconds) * 100;
+      final h = othersSeconds ~/ 3600;
+      final m = (othersSeconds % 3600) ~/ 60;
+      final s = othersSeconds % 60;
+      String formatted;
+      if (h > 0) {
+        formatted = '${h}h ${m}m';
+      } else if (m > 0) {
+        formatted = '${m}m ${s}s';
+      } else {
+        formatted = '${s}s';
+      }
+      mainApps.add(_DisplayApp(
+        displayName: 'Others',
+        totalSeconds: othersSeconds,
+        percentage: othersPct,
+        formattedTime: formatted,
+        isOthers: true,
+      ));
+    }
+
+    return mainApps;
+  }
+
+  Widget _buildEmptyState(FluentThemeData theme, bool isLight) {
+    return SizedBox(
+      height: 200,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              FluentIcons.chart,
+              size: 40,
+              color: isLight ? Colors.grey[90] : Colors.grey[100],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No data available',
+              style: theme.typography.body?.copyWith(
+                color: isLight ? Colors.grey[130] : Colors.grey[100],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Start tracking to see your usage',
+              style: theme.typography.caption?.copyWith(
+                color: isLight ? Colors.grey[100] : Colors.grey[120],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _colorForIndex(int i, List<_DisplayApp> usage) {
+    if (usage[i].isOthers) return const Color(0xFF888888);
+    return _chartColors[i % _chartColors.length];
+  }
+
+  Widget _buildCenterDisplay(
+    List<_DisplayApp> usage,
+    ScreenTimeProvider provider,
+    FluentThemeData theme,
+    bool isLight,
+  ) {
+    final isHovering = _touchedIndex >= 0 && _touchedIndex < usage.length;
+    final seconds = isHovering
+        ? usage[_touchedIndex].totalSeconds
+        : provider.totalSecondsToday;
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          isHovering ? '${usage[_touchedIndex].percentage.toStringAsFixed(0)}%' : '${h}h ${m}m',
+          style: theme.typography.bodyStrong?.copyWith(
+            fontSize: 16,
+            color: isHovering
+                ? _colorForIndex(_touchedIndex, usage)
+                : null,
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          isHovering ? 'of total' : 'Total',
+          style: theme.typography.caption?.copyWith(
+            fontSize: 10,
+            color: isLight ? Colors.grey[120] : Colors.grey[100],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<PieChartSectionData> _buildSections(List<_DisplayApp> usage, FluentThemeData theme) {
+    return List.generate(usage.length, (i) {
+      final isTouched = i == _touchedIndex;
+      final radius = isTouched ? 46.0 : 40.0;
+      final opacity = _touchedIndex == -1 || isTouched ? 1.0 : 0.6;
+      final color = _colorForIndex(i, usage);
+
+      return PieChartSectionData(
+        color: color.withOpacity(opacity),
+        value: usage[i].totalSeconds.toDouble(),
+        title: isTouched ? '${usage[i].percentage.toStringAsFixed(0)}%' : '',
+        radius: radius,
+        titleStyle: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      );
+    });
+  }
+
+  List<Widget> _buildLegendItems(
+    List<_DisplayApp> usage,
+    FluentThemeData theme,
+    bool isLight,
+    {bool blur = false}
+  ) {
+    return [
+      ...usage.asMap().entries.map((entry) {
+        final i = entry.key;
+        final app = entry.value;
+        final isSelected = i == _touchedIndex;
+        final color = _colorForIndex(i, usage);
+        final displayName = (blur && !app.isOthers)
+            ? _obscureAppName(app.displayName, true)
+            : app.displayName;
+
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _touchedIndex = i),
+          onExit: (_) => setState(() => _touchedIndex = -1),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 100),
+            margin: const EdgeInsets.symmetric(vertical: 1),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (isLight
+                      ? theme.accentColor.withOpacity(0.06)
+                      : theme.accentColor.withOpacity(0.08))
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: [
+                // Left accent strip on hover
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: 3,
+                  height: isSelected ? 16 : 0,
+                  decoration: BoxDecoration(
+                    color: isSelected ? theme.accentColor : Colors.transparent,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                SizedBox(width: isSelected ? 8 : 0),
+                // Color indicator
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              displayName,
+                              style: theme.typography.caption?.copyWith(
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                color: isLight ? Colors.grey[130] : Colors.grey[100],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            app.formattedTime,
+                            style: theme.typography.caption?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: isSelected ? theme.accentColor : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      // Progress bar
+                      Container(
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: isLight
+                              ? const Color(0xFFE5E5E5)
+                              : const Color(0xFF3D3D3D),
+                          borderRadius: BorderRadius.circular(1),
+                        ),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: (app.percentage / 100).clamp(0.0, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    ];
+  }
+}
+
+class _DisplayApp {
+  final String displayName;
+  final int totalSeconds;
+  final double percentage;
+  final String formattedTime;
+  final bool isOthers;
+
+  const _DisplayApp({
+    required this.displayName,
+    required this.totalSeconds,
+    required this.percentage,
+    required this.formattedTime,
+    this.isOthers = false,
+  });
+}
