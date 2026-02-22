@@ -124,7 +124,7 @@ flutter:
 # MSIX Configuration for Windows Store / Sideloading
 msix_config:
   display_name: Screen Time - Digital Wellbeing
-  publisher_display_name: Ariful Islam Khan
+  publisher_display_name: Freak Media
   identity_name: ArifulIslamKhan.ScreenTime-DigitalWellbeing
   publisher: CN=3E7AC579-1AB0-453F-8094-B30306C005EC
   msix_version: 1.0.6.0
