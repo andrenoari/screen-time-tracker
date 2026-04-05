@@ -1,4 +1,52 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const navToggle = document.querySelector('.nav-toggle');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (navToggle && navLinks) {
+        const closeMenu = () => {
+            navLinks.classList.remove('nav-open');
+            navToggle.classList.remove('is-active');
+            navToggle.setAttribute('aria-expanded', 'false');
+        };
+
+        navToggle.addEventListener('click', () => {
+            const isOpen = navLinks.classList.toggle('nav-open');
+            navToggle.classList.toggle('is-active', isOpen);
+            navToggle.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 820) {
+                    closeMenu();
+                }
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 820) {
+                closeMenu();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (window.innerWidth > 820 || !navLinks.classList.contains('nav-open')) {
+                return;
+            }
+
+            const target = event.target;
+            if (target instanceof Element && !navLinks.contains(target) && !navToggle.contains(target)) {
+                closeMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeMenu();
+            }
+        });
+    }
+
     // Reveal animations on scroll
     const observerOptions = {
         threshold: 0.1
@@ -23,13 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Parallax effect for hero mockup
     const mockup = document.querySelector('.mockup-container');
-    window.addEventListener('mousemove', (e) => {
-        const x = (e.clientX / window.innerWidth - 0.5) * 10;
-        const y = (e.clientY / window.innerHeight - 0.5) * 10;
-        if (mockup) {
+    if (mockup) {
+        window.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 10;
+            const y = (e.clientY / window.innerHeight - 0.5) * 10;
             mockup.style.transform = `perspective(1000px) rotateX(${5 - y}deg) rotateY(${x}deg)`;
-        }
-    });
+        });
+    }
 
     // Smooth scroll for nav links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {

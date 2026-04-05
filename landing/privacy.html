@@ -51,6 +51,56 @@
             font-size: 0.9rem;
             margin-bottom: 3rem;
         }
+
+        .nav-links a[aria-current="page"] {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .policy-container {
+                margin: 104px auto 64px;
+                padding: 0 1.5rem;
+            }
+
+            .policy-content h1 {
+                font-size: 2rem;
+            }
+
+            .policy-content h2 {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .policy-container {
+                margin: 96px auto 48px;
+                padding: 0 1rem;
+            }
+
+            .policy-content h1 {
+                font-size: 1.7rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .policy-content h2 {
+                font-size: 1.18rem;
+                margin: 1.5rem 0 0.75rem;
+            }
+
+            .policy-content p,
+            .policy-content li {
+                font-size: 0.96rem;
+            }
+
+            .policy-content ul {
+                padding-left: 1.2rem;
+            }
+
+            .last-updated {
+                margin-bottom: 2rem;
+            }
+        }
     </style>
 </head>
 
@@ -61,10 +111,17 @@
                 <img src="assets/Screen Time Logo.png" alt="Screen Time Tracker Logo">
                 <span>Screen Time</span>
             </a>
-            <ul class="nav-links">
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav"
+                aria-label="Toggle navigation menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-links" id="primary-nav">
+                <li><a href="index.html">Home</a></li>
                 <li><a href="index.html#features">Features</a></li>
                 <li><a href="index.html#showcase">Showcase</a></li>
-                <li><a href="index.html" class="btn btn-primary btn-sm">Back to Home</a></li>
+                <li><a href="privacy.html" aria-current="page">Privacy</a></li>
             </ul>
         </div>
     </nav>
@@ -163,6 +220,8 @@
             </div>
         </div>
     </footer>
+
+    <script src="script.js"></script>
 </body>
 
 </html>

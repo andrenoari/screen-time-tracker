@@ -76,6 +76,28 @@ body {
     height: 28px;
 }
 
+.nav-toggle {
+    display: none;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    background: var(--bg-white);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.nav-toggle span {
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--text-dark);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
 .nav-links {
     display: flex;
     list-style: none;
@@ -183,8 +205,42 @@ body {
 .hero-actions {
     display: flex;
     justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 1rem;
     margin-bottom: 4rem;
+}
+
+.store-badge-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    transform: scale(1.08);
+    transform-origin: center;
+    transition: transform 0.22s ease, filter 0.22s ease;
+    will-change: transform, filter;
+}
+
+.store-badge-wrap:hover {
+    transform: translateY(-2px) scale(1.1);
+    filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.18));
+}
+
+.store-badge-center {
+    width: fit-content;
+    margin: 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .store-badge-wrap {
+        transition: none;
+    }
+
+    .store-badge-wrap:hover {
+        transform: scale(1.08);
+        filter: none;
+    }
 }
 
 .hero-meta {
@@ -245,8 +301,12 @@ body {
 
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.5rem;
+}
+
+.feature-card-wide {
+    grid-column: span 2;
 }
 
 .feature-card {
@@ -277,6 +337,121 @@ body {
 .feature-card p {
     color: var(--text-gray);
     font-size: 0.95rem;
+}
+
+.feature-card-intent {
+    background: linear-gradient(140deg, #070809 0%, #0f1217 54%, #141820 100%);
+    border-color: rgba(255, 255, 255, 0.16);
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 0;
+}
+
+.feature-card-intent::after {
+    content: "";
+    position: absolute;
+    right: -70px;
+    top: -70px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 140, 0, 0.26), rgba(255, 140, 0, 0));
+    pointer-events: none;
+    z-index: 0;
+}
+
+.intent-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    align-items: stretch;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.intent-copy {
+    min-width: 0;
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.intent-visual {
+    --intent-crop-bottom: 36px;
+    width: 100%;
+    max-width: 420px;
+    justify-self: end;
+    align-self: stretch;
+    margin-top: 0;
+    border-radius: 14px 14px 0 0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    background: #111418;
+}
+
+.intent-image {
+    width: 100%;
+    height: calc(100% + var(--intent-crop-bottom));
+    min-height: calc(280px + var(--intent-crop-bottom));
+    display: block;
+    object-fit: cover;
+    object-position: top;
+}
+
+.intent-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.intent-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: rgba(255, 140, 0, 0.22);
+    color: #ffdcb3;
+    border: 1px solid rgba(255, 140, 0, 0.4);
+}
+
+.intent-name {
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.feature-card-intent h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #ffffff;
+}
+
+.feature-card-intent p {
+    margin-bottom: 1rem;
+    max-width: 62ch;
+    color: #cbd5e1;
+}
+
+.intent-cta {
+    margin-top: 0.2rem;
+    background: #f8fafc;
+    color: #0b1220;
+    border: 1px solid rgba(248, 250, 252, 0.45);
+    box-shadow: none;
+}
+
+.feature-card-intent .intent-cta:hover {
+    background: #ffe2bb;
+    color: #1f2937;
+    border-color: rgba(255, 140, 0, 0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
 }
 
 /* Privacy Section */
@@ -434,23 +609,291 @@ body {
 }
 
 /* Responsive */
+@media (max-width: 1100px) {
+    .features-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .feature-card-wide {
+        grid-column: span 2;
+    }
+}
+
 @media (max-width: 968px) {
+    .container {
+        padding: 0 1.5rem;
+    }
+
+    .hero {
+        padding: 126px 0 72px;
+    }
+
     .hero h1 {
         font-size: 2.5rem;
     }
 
+    .hero p {
+        font-size: 1.05rem;
+        margin-bottom: 2rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .feature-card-wide {
+        grid-column: span 1;
+    }
+
+    .feature-card-intent h3 {
+        font-size: 1.35rem;
+    }
+
+    .intent-layout {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .intent-visual {
+        max-width: none;
+        justify-self: stretch;
+        margin-top: 0;
+    }
+
+    .intent-image {
+        height: auto;
+        object-fit: contain;
+        min-height: 0;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+        margin-bottom: 2.5rem;
+    }
+
+    .hero-meta {
+        flex-wrap: wrap;
+        gap: 1rem 1.5rem;
+    }
+
+    .showcase {
+        padding: 0 0 72px;
+    }
+
+    .features {
+        padding: 80px 0;
+    }
+
+    .section-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .section-header h2 {
+        font-size: 2.1rem;
+    }
+
+    .feature-card {
+        padding: 1.6rem;
+    }
+
     .footer-grid {
         grid-template-columns: 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
     }
 
     .privacy-content {
         flex-direction: column;
         text-align: center;
         gap: 1.5rem;
+        padding: 2rem;
     }
 
     .stats-content {
         flex-direction: column;
-        gap: 2.5rem;
+        gap: 2rem;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+    }
+
+    .cta-final {
+        padding: 76px 0;
+    }
+
+    .cta-final h2 {
+        font-size: 2.1rem;
+    }
+
+    .cta-final p {
+        font-size: 1.05rem;
+        margin-bottom: 2rem;
+    }
+
+    .footer {
+        padding: 52px 0 24px;
+    }
+}
+
+@media (max-width: 820px) {
+    .navbar {
+        height: auto;
+        min-height: 72px;
+        padding: 0.6rem 0;
+    }
+
+    .navbar .container {
+        position: relative;
+    }
+
+    .nav-toggle {
+        display: inline-flex;
+    }
+
+    .nav-links {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 1rem;
+        left: 1rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding: 0.5rem;
+        border-radius: 12px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-white);
+        box-shadow: var(--shadow-lg);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-8px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .nav-links li {
+        width: 100%;
+    }
+
+    .nav-links a {
+        display: block;
+        border-radius: 8px;
+        padding: 0.65rem 0.8rem;
+    }
+
+    .nav-links a:hover {
+        background: var(--accent-soft);
+    }
+
+    .nav-links.nav-open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+    }
+
+    .nav-toggle.is-active span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+    }
+
+    .nav-toggle.is-active span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .nav-toggle.is-active span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 0 1rem;
+    }
+
+    .logo {
+        font-size: 1rem;
+        gap: 0.5rem;
+    }
+
+    .logo img {
+        height: 24px;
+    }
+
+    .hero {
+        padding: 112px 0 60px;
+    }
+
+    .badge {
+        font-size: 0.72rem;
+        margin-bottom: 1rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+    }
+
+    .hero p {
+        font-size: 0.98rem;
+    }
+
+    .hero-meta {
+        font-size: 0.78rem;
+    }
+
+    .store-badge-wrap {
+        transform: scale(1);
+    }
+
+    .store-badge-wrap:hover {
+        transform: scale(1.03);
+    }
+
+    .section-header h2 {
+        font-size: 1.75rem;
+    }
+
+    .feature-card {
+        padding: 1.25rem;
+    }
+
+    .feature-card h3 {
+        font-size: 1.1rem;
+    }
+
+    .feature-card-intent h3 {
+        font-size: 1.2rem;
+    }
+
+    .intent-layout {
+        gap: 0.85rem;
+    }
+
+    .intent-visual {
+        --intent-crop-bottom: 0px;
+        border-radius: 12px;
+    }
+
+    .privacy-content {
+        padding: 1.5rem;
+    }
+
+    .privacy-text h3 {
+        font-size: 1.4rem;
+    }
+
+    .stat-number {
+        font-size: 2.05rem;
+    }
+
+    .stat-label {
+        font-size: 0.78rem;
+    }
+
+    .cta-final h2 {
+        font-size: 1.7rem;
+    }
+
+    .cta-final p {
+        font-size: 0.98rem;
+    }
     }
 }

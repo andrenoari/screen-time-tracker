@@ -13,6 +13,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="assets/Screen Time Logo.png">
+    <script type="module" src="https://get.microsoft.com/badge/ms-store-badge.bundled.js"></script>
 </head>
 
 <body>
@@ -22,11 +23,16 @@
                 <img src="assets/Screen Time Logo.png" alt="Screen Time Tracker Logo">
                 <span>Screen Time</span>
             </div>
-            <ul class="nav-links">
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav"
+                aria-label="Toggle navigation menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-links" id="primary-nav">
                 <li><a href="#features">Features</a></li>
                 <li><a href="#showcase">Showcase</a></li>
                 <li><a href="privacy.html">Privacy</a></li>
-                <li><a href="#" class="btn btn-primary btn-sm">Download</a></li>
             </ul>
         </div>
     </nav>
@@ -34,22 +40,22 @@
     <header class="hero">
         <div class="container">
             <div class="hero-content">
-                <div class="badge">Version 1.0.5 Now Available</div>
+                <div class="badge">Version 1.0.7 Now Available</div>
                 <h1>Master Your <span class="text-gradient">Digital Life</span></h1>
                 <p>The ultimate screen time companion for Windows. Experience the power of Fluent Design on your desktop
                     while gaining deep insights into your digital habits.</p>
                 <div class="hero-actions">
-                    <a href="https://github.com/andrenoari/screen-time-tracker/releases/latest/download/screen_time_tracker.msix"
-                        class="btn btn-primary btn-lg">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Download for Windows (.msix)
-                    </a>
-                    <a href="#showcase" class="btn btn-outline btn-lg">See it in action</a>
+                    <div class="store-badge-wrap" id="download">
+                        <ms-store-badge
+                            productid="9mzcc1mq24g2"
+                            productname="Screen Time - Digital Wellbeing"
+                            window-mode="direct"
+                            theme="auto"
+                            size="small"
+                            language="en-us"
+                            animation="off">
+                        </ms-store-badge>
+                    </div>
                 </div>
                 <div class="hero-meta">
                     <span><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -80,29 +86,45 @@
     <section id="features" class="features">
         <div class="container">
             <div class="section-header">
-                <h2>Designed for <span class="text-gradient">Performance</span></h2>
-                <p>Powerful tools to help you understand where your time goes.</p>
+                <h2>Features for <span class="text-gradient">Intentional Work</span></h2>
+                <p>Track habits, spot patterns, and stay focused with practical controls that run quietly in the background.</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Real-time Tracking</h3>
-                    <p>Automated monitoring of active applications with precision. No manual logging required.</p>
+                    <div class="feature-icon">⏱️</div>
+                    <h3>Live Activity Tracking</h3>
+                    <p>Automatically capture active windows in real time with second-level precision and zero manual input.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚫</div>
+                    <h3>Limits and App Blocking</h3>
+                    <p>Set daily limits by app or category and block distractions when your configured limit is reached.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">📈</div>
-                    <h3>Deep Analytics</h3>
-                    <p>Visual charts and trends to help you identify patterns in your digital behavior.</p>
+                    <h3>Actionable Insights</h3>
+                    <p>Understand your behavior with clean charts, trends, and usage breakdowns across days and weeks.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🛡️</div>
-                    <h3>Privacy First</h3>
-                    <p>Your data stays on your device. We use a local SQLite database for maximum security.</p>
+                    <h3>Local-First Privacy</h3>
+                    <p>Your app usage history is stored locally on your PC, so sensitive activity data remains in your control.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
-                    <h3>Daily Goals</h3>
-                    <p>Set custom limits for applications and categories to help you stay within your targets.</p>
+                <div class="feature-card feature-card-intent feature-card-wide">
+                    <div class="intent-layout">
+                        <div class="intent-copy">
+                            <div class="intent-header">
+                                <span class="intent-badge">Try Our Extension</span>
+                                <span class="intent-name">Intent</span>
+                            </div>
+                            <h3>Pause before you scroll</h3>
+                            <p>Intent adds a mindful checkpoint on distracting websites so you set your purpose and duration before continuing.</p>
+                            <a href="https://intent.ariful.work/" class="btn btn-primary btn-sm intent-cta">Use Intent</a>
+                        </div>
+                        <div class="intent-visual">
+                            <img src="assets/pause-intent.png" alt="Intent browser extension preview" class="intent-image">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -144,8 +166,17 @@
         <div class="container text-center">
             <h2>Ready to transform your productivity?</h2>
             <p>Join thousands of users who are taking back control of their time.</p>
-            <a href="https://github.com/andrenoari/screen-time-tracker/releases/latest/download/screen_time_tracker.msix"
-                class="btn btn-primary btn-lg">Download for Windows (.msix)</a>
+            <div class="store-badge-wrap store-badge-center">
+                <ms-store-badge
+                    productid="9mzcc1mq24g2"
+                    productname="Screen Time - Digital Wellbeing"
+                    window-mode="direct"
+                    theme="auto"
+                    size="small"
+                    language="en-us"
+                    animation="off">
+                </ms-store-badge>
+            </div>
             <p class="small mt-2">Compatible with Windows 10 & 11</p>
         </div>
     </section>
