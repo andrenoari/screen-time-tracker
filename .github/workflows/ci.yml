@@ -9,6 +9,9 @@ on:
     branches:
       - main
       - master
+  release:
+    types:
+      - created
 
 jobs:
   validate:
@@ -37,3 +40,41 @@ jobs:
 
       - name: Build Windows debug
         run: flutter build windows --debug
+
+  build-release:
+    runs-on: windows-latest
+    needs: validate
+    if: github.event_name == 'release' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Build MSIX package
+        run: flutter pub run msix:create
+
+      - name: Upload Windows release build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: build/windows/x64/runner/Release
+
+      - name: Upload MSIX package
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-package
+          path: build/windows/x64/runner/Release/*.msix

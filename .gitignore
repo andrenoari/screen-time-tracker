@@ -48,3 +48,6 @@ app.*.map.json
 installer/
 certificates/*.pfx
 !certificates/*.cer
+
+bench-runs/
+
