@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../models/app_block.dart';
@@ -100,9 +101,11 @@ class SettingsProvider with ChangeNotifier {
 
     // Setup launch at startup
     if (Platform.isWindows) {
+      final packageInfo = await PackageInfo.fromPlatform();
       launchAtStartup.setup(
-        appName: 'Screen Time Tracker',
+        appName: packageInfo.appName,
         appPath: Platform.resolvedExecutable,
+        packageName: packageInfo.packageName,
       );
       
       // Sync the actual state

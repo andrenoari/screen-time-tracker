@@ -27,6 +27,12 @@ jobs:
       - name: Build Windows Release
         run: flutter build windows --release
 
+      - name: Create Portable Zip
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath ScreenTimeTracker-${{ github.ref_name }}-Portable.zip
+
+      - name: Build MSIX for Microsoft Store
+        run: dart run msix:create
+
       - name: Install Inno Setup
         run: |
           choco install innosetup
@@ -38,6 +44,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: installer/*.exe
+          files: |
+            installer/*.exe
+            ScreenTimeTracker-*-Portable.zip
+            **/*.msix
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

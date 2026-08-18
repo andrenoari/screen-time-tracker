@@ -138,6 +138,7 @@ class ScreenTimeProvider extends ChangeNotifier {
       notifyListeners();
     };
 
+    int tickCount = 0;
     _processTracker.onTotalTimeUpdated = (totalSeconds) {
       final liveChanged = _liveTodayTotalSeconds != totalSeconds;
       _liveTodayTotalSeconds = totalSeconds;
@@ -151,6 +152,12 @@ class ScreenTimeProvider extends ChangeNotifier {
 
       if (liveChanged || selectedRangeChanged) {
         notifyListeners();
+      }
+
+      tickCount++;
+      if (tickCount >= 5) {
+        tickCount = 0;
+        refreshData();
       }
     };
 
