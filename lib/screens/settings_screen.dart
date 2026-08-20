@@ -551,9 +551,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       future: _packageInfoFuture ??= PackageInfo.fromPlatform(),
                       builder: (context, snapshot) {
                         final version = snapshot.data?.version ?? '1.0.0';
+                        final appName = snapshot.data?.appName ?? 'Screen Time';
                         return _SettingsRow(
                           icon: FluentIcons.info,
-                          title: 'Screen Time',
+                          title: appName,
                           subtitle: 'Version $version',
                           isLight: isLight,
                           child: Button(
@@ -1666,11 +1667,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
         } else {
           // 4. Show "Up to date" InfoBar
+          final packageInfo = await PackageInfo.fromPlatform();
           await displayInfoBar(
             context,
             builder: (context, close) => InfoBar(
               title: const Text('You\'re up to date!'),
-              content: const Text('Screen Time v1.0.0 is the latest version.'),
+              content: Text('${packageInfo.appName} v${packageInfo.version} is the latest version.'),
               severity: InfoBarSeverity.success,
               onClose: close,
             ),
