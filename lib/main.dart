@@ -15,6 +15,7 @@ import 'screens/statistics_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/blocking_screen.dart';
 import 'services/analytics_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 
 // Global window effect manager
@@ -79,6 +80,9 @@ void main() async {
   // Initialize analytics
   await AnalyticsService().initialize();
   await AnalyticsService().trackEvent('App Launch');
+
+  // Disable Google Fonts HTTP fetching for privacy and offline reliability
+  GoogleFonts.config.allowRuntimeFetching = false;
 
 
   // Initialize flutter_acrylic FIRST
